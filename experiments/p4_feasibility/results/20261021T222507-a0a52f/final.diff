@@ -1,0 +1,11 @@
+--- a/src/intervals.py
++++ b/src/intervals.py
+@@ -6,7 +6,7 @@
+     """
+     merged: list[tuple[int, int]] = []
+     for start, end in sorted(intervals):
+-        if merged and start < merged[-1][1]:
++        if merged and start <= merged[-1][1]:
+             merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+         else:
+             merged.append((start, end))

@@ -1,0 +1,46 @@
+{
+  "run_id": "20261021T222415-1d31b1",
+  "task_id": "cart_rounding_004",
+  "split": "dev",
+  "config": {
+    "harness": {
+      "max_steps": 12,
+      "max_tool_calls_per_step": 1,
+      "run_tests_enabled": true
+    },
+    "model": {
+      "model": "claude-haiku-5-5",
+      "max_tokens": 4096,
+      "effort": "medium",
+      "thinking_display": "summarized",
+      "disable_parallel_tool_use": true,
+      "timeout_s": 60.0,
+      "max_retries": 2
+    }
+  },
+  "config_hash": "8e0bc625dbb979b04197f5fc091eddc7373da1dd48b04ec83480061611bbac44",
+  "valid": true,
+  "invalid_reason": null,
+  "stop_reason": "finished",
+  "verified_success": true,
+  "verification_status": "passed",
+  "test_counts": {
+    "passed": 6
+  },
+  "model_calls": 6,
+  "tool_calls_attempted": 5,
+  "tool_calls_rejected": 0,
+  "errors_by_kind": {},
+  "run_tests_calls": 1,
+  "used_test_feedback": true,
+  "input_tokens": 10315,
+  "output_tokens": 863,
+  "estimated_cost_usd": 0.001463,
+  "models_served": [
+    "claude-haiku-5-5"
+  ],
+  "final_answer": "The bug was in src/money.py: round_cents truncated amounts to cents (int(amount * 100)) instead of rounding halves up, so e.g. 5.025 became 5.02 and 0.375 became 0.37. I changed it to Decimal(amount).quantize(Decimal(\"0.01\"), rounding=ROUND_HALF_UP). All 6 tests in tests/test_cart.py now pass; the tests and src/cart.py were not changed.",
+  "error": null,
+  "wall_time_s": 9.007,
+  "sandbox_image": "sha256:5637afa0631af1fb0cf1665a661f7e2b76a9340e432bcfbe8d4f6457393be4fc"
+}

@@ -1,0 +1,14 @@
+--- a/src/lru.py
++++ b/src/lru.py
+@@ -14,7 +14,10 @@
+         self._data: OrderedDict[str, object] = OrderedDict()
+ 
+     def get(self, key: str, default: object = None) -> object:
+-        return self._data.get(key, default)
++        if key not in self._data:
++            return default
++        self._data.move_to_end(key)
++        return self._data[key]
+ 
+     def put(self, key: str, value: object) -> None:
+         if key in self._data:

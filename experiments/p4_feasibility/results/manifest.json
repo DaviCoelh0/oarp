@@ -1,0 +1,63 @@
+{
+  "study": "P4 preliminary feasibility (not a benchmark)",
+  "started": "2026-10-21T22:24:15+00:00",
+  "harness": {
+    "max_steps": 12,
+    "max_tool_calls_per_step": 1,
+    "run_tests_enabled": true
+  },
+  "model_settings": {
+    "model": "claude-haiku-5-5",
+    "max_tokens": 4096,
+    "effort": "medium",
+    "thinking_display": "summarized",
+    "disable_parallel_tool_use": true,
+    "timeout_s": 60.0,
+    "max_retries": 2
+  },
+  "tasks": [
+    "cart_rounding_004",
+    "lru_cache_005",
+    "merge_intervals_003",
+    "mutable_default_002",
+    "off_by_one_001"
+  ],
+  "repetitions": 3,
+  "schedule": [
+    "cart_rounding_004",
+    "lru_cache_005",
+    "merge_intervals_003",
+    "mutable_default_002",
+    "off_by_one_001",
+    "cart_rounding_004",
+    "lru_cache_005",
+    "merge_intervals_003",
+    "mutable_default_002",
+    "off_by_one_001",
+    "cart_rounding_004",
+    "lru_cache_005",
+    "merge_intervals_003",
+    "mutable_default_002",
+    "off_by_one_001"
+  ],
+  "budget_usd": 1.0,
+  "runs": [
+    "20261021T222415-1d31b1",
+    "20261021T222424-ec7ff5",
+    "20261021T222431-e611eb",
+    "20261021T222438-c151e9",
+    "20261021T222444-f49697",
+    "20261021T222451-8972e9",
+    "20261021T222500-c60590",
+    "20261021T222507-a0a52f",
+    "20261021T222514-54af07",
+    "20261021T222520-bc2755",
+    "20261021T222527-5a2444",
+    "20261021T222536-edf156",
+    "20261021T222543-a548c6",
+    "20261021T222550-57238a",
+    "20261021T222557-6655ff"
+  ],
+  "estimated_spend_usd": 0.017324,
+  "finished": "2026-10-21T22:26:04+00:00"
+}
