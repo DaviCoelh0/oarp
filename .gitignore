@@ -1,0 +1,9 @@
+venv/
+docs/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.DS_Store
+.env
+runs/
+CLAUDE.md
