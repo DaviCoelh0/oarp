@@ -11,8 +11,13 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
+anthropic = ["anthropic>=1.17,<2"]
+dev = ["pytest>=8", "anthropic>=1.17,<2"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+    "docker: needs a running Docker daemon and the oarp-sandbox image (skipped otherwise)",
+    "live: makes real, paid API calls; runs only with OARP_LIVE_TESTS=1",
+]

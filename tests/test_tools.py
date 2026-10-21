@@ -1,7 +1,7 @@
 import pytest
 
-from oarp.core.tools import Tool, ToolError, ToolRegistry, ToolSpec
-from oarp.core.types import ToolCall
+from oarp.core.tools import InfrastructureError, Tool, ToolError, ToolRegistry, ToolSpec
+from oarp.core.types import ErrorKind, ToolCall
 
 
 def _echo(text: str, times: int = 1) -> str:
@@ -44,24 +44,38 @@ def test_successful_call(registry: ToolRegistry) -> None:
 
 
 @pytest.mark.parametrize(
-    ("name", "args", "expected"),
+    ("name", "args", "expected", "kind"),
     [
-        ("nope", {"text": "x"}, "unknown tool 'nope'"),
-        ("echo", {}, "missing required argument(s): text"),
-        ("echo", {"text": "x", "extra": 1}, "unknown argument(s): extra"),
-        ("echo", {"text": 3}, "'text' must be of type string"),
-        ("echo", {"text": "x", "times": True}, "'times' must be of type integer"),
-        ("echo", "not a dict", "arguments must be a JSON object"),
-        ("refuses", {"text": "x"}, "Error: not allowed"),
-        ("broken", {"text": "x"}, "tool raised KeyError"),
+        ("nope", {"text": "x"}, "unknown tool 'nope'", ErrorKind.UNKNOWN_TOOL),
+        ("echo", {}, "missing required argument(s): text", ErrorKind.INVALID_ARGUMENTS),
+        ("echo", {"text": "x", "extra": 1}, "unknown argument(s): extra", ErrorKind.INVALID_ARGUMENTS),
+        ("echo", {"text": 3}, "'text' must be of type string", ErrorKind.INVALID_ARGUMENTS),
+        ("echo", {"text": "x", "times": True}, "'times' must be of type integer", ErrorKind.INVALID_ARGUMENTS),
+        ("echo", "not a dict", "arguments must be a JSON object", ErrorKind.INVALID_ARGUMENTS),
+        ("refuses", {"text": "x"}, "Error: not allowed", ErrorKind.TOOL_REFUSED),
+        ("broken", {"text": "x"}, "tool raised KeyError", ErrorKind.TOOL_BUG),
     ],
 )
 def test_failures_become_error_results(
-    registry: ToolRegistry, name: str, args: object, expected: str
+    registry: ToolRegistry, name: str, args: object, expected: str, kind: ErrorKind
 ) -> None:
     result = run(registry, name, args)
     assert result.is_error
+    assert result.error_kind is kind
     assert expected in result.content
+
+
+def test_successful_call_has_no_error_kind(registry: ToolRegistry) -> None:
+    assert run(registry, "echo", {"text": "a"}).error_kind is None
+
+
+def test_infrastructure_errors_are_re_raised_not_returned() -> None:
+    def docker_down(text: str) -> str:
+        raise InfrastructureError("docker daemon unavailable")
+
+    registry = ToolRegistry([Tool(ToolSpec("needs_docker", "", SCHEMA), docker_down)])
+    with pytest.raises(InfrastructureError, match="docker daemon"):
+        registry.execute(ToolCall("c1", "needs_docker", {"text": "x"}))
 
 
 def test_duplicate_names_rejected() -> None:

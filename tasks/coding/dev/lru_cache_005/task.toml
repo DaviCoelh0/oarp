@@ -1,0 +1,6 @@
+id = "lru_cache_005"
+split = "dev"
+prompt = "The tests in tests/test_lru.py fail. Find and fix the bug so that all tests pass. Do not change the tests."
+editable = ["src/lru.py"]
+test_command = ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "-o", "pythonpath=src", "tests"]
+timeout_s = 30

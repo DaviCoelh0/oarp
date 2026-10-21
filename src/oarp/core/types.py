@@ -29,6 +29,18 @@ class ToolCall:
     arguments: dict[str, Any]
 
 
+class ErrorKind(StrEnum):
+    """Why a tool call produced an error result. All but TOOL_BUG are model
+    mistakes; TOOL_BUG means our tool code crashed and the run is suspect."""
+
+    UNKNOWN_TOOL = "unknown_tool"  # registry
+    INVALID_ARGUMENTS = "invalid_arguments"  # registry
+    TOOL_REFUSED = "tool_refused"  # registry: the tool raised ToolError
+    TOOL_BUG = "tool_bug"  # registry: unexpected exception
+    OVER_LIMIT = "over_limit"  # loop: beyond max_tool_calls_per_step
+    INVALID_FINISH = "invalid_finish"  # loop: finish with bad arguments
+
+
 @dataclass(frozen=True)
 class ToolResult:
     """What the harness sends back to the model after a tool call."""
@@ -37,6 +49,7 @@ class ToolResult:
     name: str
     content: str
     is_error: bool = False
+    error_kind: ErrorKind | None = None  # set whenever is_error is True
 
 
 @dataclass(frozen=True)
@@ -45,12 +58,18 @@ class Message:
 
     Assistant messages may carry tool calls; tool messages carry exactly one
     result, linked to its call through `tool_call_id`.
+
+    `raw` is an opaque provider payload (e.g. Anthropic content blocks with
+    thinking) that the loop copies along without inspecting; only the adapter
+    that produced it reads it back.
     """
 
     role: Role
     content: str = ""
     tool_calls: tuple[ToolCall, ...] = ()
     tool_call_id: str | None = None
+    is_error: bool = False  # tool messages only
+    raw: Any = None  # assistant messages only
 
 
 @dataclass(frozen=True)
@@ -61,11 +80,22 @@ class Usage:
 
 @dataclass(frozen=True)
 class ModelResponse:
-    """One model turn: optional text plus zero or more tool calls."""
+    """One model turn: optional text plus zero or more tool calls.
+
+    `stop_reason` and `model` are the provider's own values (for traces);
+    `raw` is the opaque provider payload to replay on the next request.
+    """
 
     text: str = ""
     tool_calls: tuple[ToolCall, ...] = ()
     usage: Usage | None = None
+    stop_reason: str | None = None
+    model: str | None = None
+    # Provider-generated summary of the model's hidden reasoning, if any. A summary
+    # ABOUT the reasoning, not the reasoning itself: useful for forming hypotheses
+    # during failure analysis, never as evidence of why the model acted.
+    reasoning_summary: str | None = None
+    raw: Any = None
 
 
 class StopReason(StrEnum):

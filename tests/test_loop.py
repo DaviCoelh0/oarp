@@ -3,7 +3,7 @@ import pytest
 from oarp.core.loop import run_agent
 from oarp.core.model import ScriptedModel
 from oarp.core.tools import Tool, ToolRegistry, ToolSpec
-from oarp.core.types import ModelResponse, StopReason, ToolCall, Usage
+from oarp.core.types import ErrorKind, ModelResponse, StopReason, ToolCall, Usage
 
 ADD = Tool(
     ToolSpec(
@@ -102,6 +102,7 @@ def test_invalid_finish_does_not_stop() -> None:
     result = run(model)
     assert result.stop_reason is StopReason.FINISHED
     assert result.steps[0].tool_results[0].is_error
+    assert result.steps[0].tool_results[0].error_kind is ErrorKind.INVALID_FINISH
 
 
 def test_calls_after_finish_in_same_response_are_ignored() -> None:
@@ -155,6 +156,7 @@ def test_calls_beyond_limit_are_rejected_not_executed() -> None:
     executed, rejected = result.steps[0].tool_results
     assert not executed.is_error
     assert rejected.is_error and rejected.call_id == "c1"
+    assert rejected.error_kind is ErrorKind.OVER_LIMIT
     assert "not executed" in rejected.content
     # Every requested call is paired with a tool message the model sees next.
     assert [m.tool_call_id for m in model.calls[1][0] if m.role == "tool"] == ["c0", "c1"]
@@ -239,3 +241,60 @@ def test_model_sees_a_snapshot_per_call() -> None:
     model = ScriptedModel([call("add", a=2, b=3), call("finish", "c2", answer="5")])
     run(model)
     assert [len(messages) for messages, _ in model.calls] == [2, 4]
+
+
+# --- on_event: what the loop reports for tracing ---
+
+
+def traced(model: ScriptedModel, max_steps: int = 5, per_step: int = 1) -> tuple[list[dict], object]:
+    events: list[dict] = []
+    result = run_agent(model, ToolRegistry([ADD]), system_prompt="sys", task_prompt="task",
+                       max_steps=max_steps, max_tool_calls_per_step=per_step, on_event=events.append)
+    return events, result
+
+
+def test_events_follow_the_run_in_order() -> None:
+    usage = Usage(input_tokens=50, output_tokens=7)
+    first = ModelResponse(text="adding", tool_calls=(ToolCall("c1", "add", {"a": 2, "b": 3}),),
+                          usage=usage, model="m", stop_reason="tool_use", reasoning_summary="need a sum")
+    events, _ = traced(ScriptedModel([first, call("finish", "c2", answer="5")]))
+
+    assert [e["event"] for e in events] == ["model_call", "tool_result", "model_call", "run_end"]
+    m = events[0]
+    assert (m["step"], m["model"], m["input_tokens"], m["output_tokens"]) == (1, "m", 50, 7)
+    assert (m["text"], m["reasoning_summary"]) == ("adding", "need a sum")
+    assert m["tool_calls"] == [{"id": "c1", "name": "add", "arguments": {"a": 2, "b": 3}}]
+    t = events[1]
+    assert (t["outcome"], t["content"], t["is_error"], t["error_kind"]) == ("executed", "5", False, None)
+    assert t["latency_s"] >= 0
+    assert events[-1] == {"event": "run_end", "stop_reason": StopReason.FINISHED, "model_calls": 2,
+                          "final_answer": "5", "error": None}
+
+
+def test_rejected_and_invalid_finish_outcomes_are_reported() -> None:
+    two = calls(("add", {"a": 1, "b": 1}), ("add", {"a": 2, "b": 2}))
+    events, _ = traced(ScriptedModel([two, call("finish"), call("finish", answer="ok")]))
+    tool_events = [e for e in events if e["event"] == "tool_result"]
+    assert [(e["outcome"], e["error_kind"]) for e in tool_events] == [
+        ("executed", None), ("rejected", ErrorKind.OVER_LIMIT), ("invalid_finish", ErrorKind.INVALID_FINISH),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("script", "max_steps", "stop"),
+    [
+        ([ModelResponse(text="bye")], 5, StopReason.NO_TOOL_CALL),
+        ([call("add", a=1, b=1)] * 3, 2, StopReason.MAX_STEPS),
+        ([], 5, StopReason.MODEL_ERROR),
+    ],
+)
+def test_every_exit_emits_run_end(script, max_steps: int, stop: StopReason) -> None:
+    events, result = traced(ScriptedModel(script), max_steps=max_steps)
+    assert events[-1]["event"] == "run_end" and events[-1]["stop_reason"] is stop is result.stop_reason
+    if stop is StopReason.MODEL_ERROR:
+        assert events[-2]["event"] == "model_error" and "ScriptExhausted" in events[-2]["error"]
+
+
+def test_no_callback_changes_nothing() -> None:
+    script = [call("add", a=2, b=3), call("finish", "c2", answer="5")]
+    assert run(ScriptedModel(script)).messages == traced(ScriptedModel(script))[1].messages

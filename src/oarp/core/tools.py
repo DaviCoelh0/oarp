@@ -8,11 +8,17 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from typing import Any
 
-from oarp.core.types import ToolCall, ToolResult, ToolSpec
+from oarp.core.types import ErrorKind, ToolCall, ToolResult, ToolSpec
 
 
 class ToolError(Exception):
     """An expected, model-facing failure (bad path, file not found, ...)."""
+
+
+class InfrastructureError(Exception):
+    """The harness itself failed (e.g. Docker unavailable). Not the model's fault:
+    the registry re-raises it, so the run aborts and can be marked invalid
+    instead of being scored as an agent failure."""
 
 
 @dataclass(frozen=True)
@@ -69,16 +75,23 @@ class ToolRegistry:
         return [tool.spec for tool in self._tools.values()]
 
     def execute(self, call: ToolCall) -> ToolResult:
-        def error(message: str) -> ToolResult:
-            return ToolResult(call.id, call.name, f"Error: {message}", is_error=True)
+        def error(kind: ErrorKind, message: str) -> ToolResult:
+            return ToolResult(call.id, call.name, f"Error: {message}", is_error=True, error_kind=kind)
 
         tool = self._tools.get(call.name)
         if tool is None:
-            return error(f"unknown tool '{call.name}'. Available: {', '.join(self._tools)}")
+            return error(ErrorKind.UNKNOWN_TOOL, f"unknown tool '{call.name}'. Available: {', '.join(self._tools)}")
+        # Separate try blocks: a ToolError from validation (bad arguments) and a
+        # ToolError from the handler (the tool refused) are different kinds.
         try:
             validate_arguments(tool.spec.parameters, call.arguments)
+        except ToolError as exc:
+            return error(ErrorKind.INVALID_ARGUMENTS, str(exc))
+        try:
             return ToolResult(call.id, call.name, tool.handler(**call.arguments))
         except ToolError as exc:
-            return error(str(exc))
+            return error(ErrorKind.TOOL_REFUSED, str(exc))
+        except InfrastructureError:
+            raise
         except Exception as exc:  # a tool bug must not crash the run
-            return error(f"tool raised {type(exc).__name__}: {exc}")
+            return error(ErrorKind.TOOL_BUG, f"tool raised {type(exc).__name__}: {exc}")

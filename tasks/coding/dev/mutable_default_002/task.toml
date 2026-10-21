@@ -1,0 +1,6 @@
+id = "mutable_default_002"
+split = "dev"
+prompt = "The tests in tests/test_tags.py fail. Find and fix the bug so that all tests pass. Do not change the tests."
+editable = ["src/tags.py"]
+test_command = ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "-o", "pythonpath=src", "tests"]
+timeout_s = 30
