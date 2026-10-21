@@ -9,11 +9,11 @@ any reasoning summaries are written to a trace (path printed with -s).
 
 import json
 import os
-import re
 from pathlib import Path
 
 import pytest
 
+from oarp.core.env import read_env_value
 from oarp.core.loop import run_agent
 from oarp.core.tools import Tool, ToolRegistry, ToolSpec
 from oarp.core.trace import JsonlTracer
@@ -28,10 +28,10 @@ ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 
 
 def api_key() -> str:
-    match = re.search(r'^\s*(?:export\s+)?ANTHROPIC_API_KEY\s*=\s*["\']?([^"\'\s]+)', ENV_FILE.read_text(), re.M)
-    if not match:
+    key = read_env_value(ENV_FILE, "ANTHROPIC_API_KEY")
+    if not key:
         pytest.skip("ANTHROPIC_API_KEY not found in .env")
-    return match.group(1)
+    return key
 
 
 def test_real_tool_loop_with_haiku(tmp_path_factory: pytest.TempPathFactory) -> None:

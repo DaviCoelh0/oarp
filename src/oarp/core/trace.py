@@ -35,18 +35,26 @@ def stable_hash(obj: Any) -> str:
 
 
 def git_info(repo_dir: Path) -> dict[str, Any] | None:
-    """Commit and whether the working tree has uncommitted changes (None outside git)."""
+    """Commit, whether TRACKED files have uncommitted changes, and the number of
+    untracked (non-ignored) files, reported separately: a run that writes its
+    results inside the repo creates untracked files but leaves the code as
+    committed. None outside a git repository."""
     def git(*args: str) -> subprocess.CompletedProcess:
         return subprocess.run(["git", "-C", str(repo_dir), *args], capture_output=True, text=True, timeout=10)
 
     try:
         commit = git("rev-parse", "HEAD")
-        status = git("status", "--porcelain")
+        tracked = git("status", "--porcelain", "--untracked-files=no")
+        untracked = git("ls-files", "--others", "--exclude-standard")
     except (OSError, subprocess.TimeoutExpired):
         return None
     if commit.returncode != 0:
         return None
-    return {"commit": commit.stdout.strip(), "dirty": bool(status.stdout.strip())}
+    return {
+        "commit": commit.stdout.strip(),
+        "dirty": bool(tracked.stdout.strip()),
+        "untracked_files": len(untracked.stdout.splitlines()),
+    }
 
 
 class JsonlTracer:

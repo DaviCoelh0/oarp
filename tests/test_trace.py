@@ -1,4 +1,5 @@
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -66,4 +67,22 @@ def test_run_ids_are_unique_and_sortable() -> None:
 def test_git_info(tmp_path: Path) -> None:
     info = git_info(REPO)
     assert info is not None and len(info["commit"]) == 40 and isinstance(info["dirty"], bool)
+    assert isinstance(info["untracked_files"], int)
     assert git_info(tmp_path) is None  # not a repository
+
+
+def test_untracked_files_do_not_make_the_tree_dirty(tmp_path: Path) -> None:
+    def git(*args: str) -> None:
+        subprocess.run(["git", "-C", str(tmp_path), *args], check=True, capture_output=True)
+
+    git("init", "-q")
+    (tmp_path / "code.py").write_text("x = 1\n")
+    git("add", "code.py")
+    git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "init")
+    assert git_info(tmp_path) | {"commit": None} == {"commit": None, "dirty": False, "untracked_files": 0}
+
+    (tmp_path / "results.json").write_text("{}")  # e.g. run output written inside the repo
+    assert git_info(tmp_path)["dirty"] is False and git_info(tmp_path)["untracked_files"] == 1
+
+    (tmp_path / "code.py").write_text("x = 2\n")  # a real code change
+    assert git_info(tmp_path)["dirty"] is True
