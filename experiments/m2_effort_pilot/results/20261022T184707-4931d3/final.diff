@@ -1,0 +1,41 @@
+--- a/src/activity/cursor.py
++++ b/src/activity/cursor.py
+@@ -12,14 +12,14 @@
+ 
+ 
+ def encode(last: Event) -> str:
+-    """Token for the position just after `last`."""
+-    payload = json.dumps({"t": last.created_at})
++    """Token for the position just after `last` in feed order (created_at, id)."""
++    payload = json.dumps({"t": last.created_at, "i": last.id})
+     return base64.urlsafe_b64encode(payload.encode("utf-8")).decode("ascii")
+ 
+ 
+-def decode(token: str) -> int:
++def decode(token: str) -> tuple[int, int]:
+     try:
+         payload = json.loads(base64.urlsafe_b64decode(token.encode("ascii")))
+-        return int(payload["t"])
++        return int(payload["t"]), int(payload["i"])
+     except (binascii.Error, UnicodeError, ValueError, KeyError, TypeError) as exc:
+         raise InvalidCursor(f"not a valid page token: {token!r}") from exc
+--- a/src/activity/store.py
++++ b/src/activity/store.py
+@@ -24,12 +24,12 @@
+     def __len__(self) -> int:
+         return len(self._events)
+ 
+-    def page(self, after: int | None, limit: int) -> list[Event]:
+-        """Up to `limit` events in feed order, starting after position `after`
+-        (None = from the start)."""
++    def page(self, after: tuple[int, int] | None, limit: int) -> list[Event]:
++        """Up to `limit` events in feed order (created_at, id), starting strictly
++        after the position `after` (None = from the start)."""
+         if limit < 1:
+             raise ValueError("limit must be >= 1")
+-        ordered = sorted(self._events, key=lambda e: e.created_at)
++        ordered = sorted(self._events, key=lambda e: (e.created_at, e.id))
+         if after is not None:
+-            ordered = [e for e in ordered if e.created_at > after]
++            ordered = [e for e in ordered if (e.created_at, e.id) > after]
+         return ordered[:limit]

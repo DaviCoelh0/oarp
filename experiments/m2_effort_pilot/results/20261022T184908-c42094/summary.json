@@ -1,0 +1,55 @@
+{
+  "run_id": "20261022T184908-c42094",
+  "task_id": "feed_pagination_006",
+  "split": "dev",
+  "task_format": 2,
+  "task_hash": "4686a7ba660b5a20c0ce38723e9d9fa0f712e67505a68db5c1ee555cbbd34c83",
+  "heldout_opt_in": false,
+  "config": {
+    "harness": {
+      "max_steps": 12,
+      "max_tool_calls_per_step": 1,
+      "run_tests_enabled": true,
+      "loop": "plain"
+    },
+    "model": {
+      "model": "claude-haiku-5-5",
+      "max_tokens": 4096,
+      "effort": "medium",
+      "thinking_display": "summarized",
+      "disable_parallel_tool_use": true,
+      "timeout_s": 60.0,
+      "max_retries": 2
+    }
+  },
+  "config_hash": "e50fdc51d5c6f10cabd0723b999bd434c7caa3bfce5c12dda1f153cd2b51c8a3",
+  "valid": true,
+  "invalid_reason": null,
+  "stop_reason": "finished",
+  "verified_success": true,
+  "verification_status": "passed",
+  "test_counts": {
+    "passed": 7
+  },
+  "public_status": "passed",
+  "hidden_status": "passed",
+  "hidden_counts": {
+    "passed": 7
+  },
+  "model_calls": 10,
+  "tool_calls_attempted": 9,
+  "tool_calls_rejected": 0,
+  "errors_by_kind": {},
+  "run_tests_calls": 1,
+  "used_test_feedback": true,
+  "input_tokens": 30948,
+  "output_tokens": 2379,
+  "estimated_cost_usd": 0.004284,
+  "models_served": [
+    "claude-haiku-5-5"
+  ],
+  "final_answer": "Cause: the feed was ordered and paged by created_at alone, and the page token only stored created_at. When several events shared a timestamp and a page boundary fell among them, the next page filtered with created_at > token and silently skipped the remaining same-timestamp events.\n\nFix: the feed order is now the total key (created_at, id) (store.py). Tokens encode both values (cursor.py), decode returns the pair, and page() filters strictly after that pair (store.py). export.py needed no change since it passes the last event to encode. Malformed tokens still raise InvalidCursor. All 7 tests pass, including the existing shared-timestamp test. Note that tokens issued by the old format (only \"t\") will now be rejected as invalid.",
+  "error": null,
+  "wall_time_s": 19.478,
+  "sandbox_image": "sha256:4c6052e23fa70db432b7eb6d5ee426f9fb0f31083eb0c57065a8d421b6b26438"
+}

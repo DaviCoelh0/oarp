@@ -1,0 +1,55 @@
+{
+  "run_id": "20261022T185001-a93bc5",
+  "task_id": "config_merge_007",
+  "split": "dev",
+  "task_format": 2,
+  "task_hash": "9c9b2fd96c3649c570f3fdfd4449bcf19e382fde7677b082b7a773ccfe9bdf7f",
+  "heldout_opt_in": false,
+  "config": {
+    "harness": {
+      "max_steps": 12,
+      "max_tool_calls_per_step": 1,
+      "run_tests_enabled": true,
+      "loop": "plain"
+    },
+    "model": {
+      "model": "claude-haiku-5-5",
+      "max_tokens": 4096,
+      "effort": "low",
+      "thinking_display": "summarized",
+      "disable_parallel_tool_use": true,
+      "timeout_s": 60.0,
+      "max_retries": 2
+    }
+  },
+  "config_hash": "fb81d4a4b7902e94a7d95eb6ed3567ba67a4effdccafdf0c28cdf9aedc6a8b09",
+  "valid": true,
+  "invalid_reason": null,
+  "stop_reason": "finished",
+  "verified_success": true,
+  "verification_status": "passed",
+  "test_counts": {
+    "passed": 4
+  },
+  "public_status": "passed",
+  "hidden_status": "passed",
+  "hidden_counts": {
+    "passed": 10
+  },
+  "model_calls": 9,
+  "tool_calls_attempted": 8,
+  "tool_calls_rejected": 0,
+  "errors_by_kind": {},
+  "run_tests_calls": 1,
+  "used_test_feedback": true,
+  "input_tokens": 17537,
+  "output_tokens": 1247,
+  "estimated_cost_usd": 0.002377,
+  "models_served": [
+    "claude-haiku-5-5"
+  ],
+  "final_answer": "Root cause: load_config did a shallow copy of DEFAULTS (dict(DEFAULTS)), so nested dicts like logging and allowed_hosts were shared across calls. merge() then mutated those shared nested dicts in place, and override values (lists, nested dicts) were stored by reference. So changes made via enable_debug() to one config leaked into later loads.\n\nFix: load_config now uses copy.deepcopy(DEFAULTS), and merge() works on a deep copy of base and deep-copies override values, returning a new dict without modifying either input. All 4 tests pass. I did not add new tests for the leak scenario.",
+  "error": null,
+  "wall_time_s": 15.086,
+  "sandbox_image": "sha256:4c6052e23fa70db432b7eb6d5ee426f9fb0f31083eb0c57065a8d421b6b26438"
+}

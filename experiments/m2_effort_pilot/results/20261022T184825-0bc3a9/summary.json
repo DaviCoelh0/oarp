@@ -1,0 +1,55 @@
+{
+  "run_id": "20261022T184825-0bc3a9",
+  "task_id": "feed_pagination_006",
+  "split": "dev",
+  "task_format": 2,
+  "task_hash": "4686a7ba660b5a20c0ce38723e9d9fa0f712e67505a68db5c1ee555cbbd34c83",
+  "heldout_opt_in": false,
+  "config": {
+    "harness": {
+      "max_steps": 12,
+      "max_tool_calls_per_step": 1,
+      "run_tests_enabled": true,
+      "loop": "plain"
+    },
+    "model": {
+      "model": "claude-haiku-5-5",
+      "max_tokens": 4096,
+      "effort": "low",
+      "thinking_display": "summarized",
+      "disable_parallel_tool_use": true,
+      "timeout_s": 60.0,
+      "max_retries": 2
+    }
+  },
+  "config_hash": "fb81d4a4b7902e94a7d95eb6ed3567ba67a4effdccafdf0c28cdf9aedc6a8b09",
+  "valid": true,
+  "invalid_reason": null,
+  "stop_reason": "finished",
+  "verified_success": true,
+  "verification_status": "passed",
+  "test_counts": {
+    "passed": 7
+  },
+  "public_status": "passed",
+  "hidden_status": "passed",
+  "hidden_counts": {
+    "passed": 7
+  },
+  "model_calls": 8,
+  "tool_calls_attempted": 7,
+  "tool_calls_rejected": 0,
+  "errors_by_kind": {},
+  "run_tests_calls": 1,
+  "used_test_feedback": true,
+  "input_tokens": 19213,
+  "output_tokens": 1660,
+  "estimated_cost_usd": 0.002751,
+  "models_served": [
+    "claude-haiku-5-5"
+  ],
+  "final_answer": "Cause: the feed was ordered by created_at alone and the page token stored only created_at. When events shared a timestamp and a page boundary fell among them, the next page skipped the remaining tied events. Fix: the feed order is now (created_at, id), which is unique per event; the token encodes both fields (t and i); and store.page resumes strictly after that (created_at, id) position. All 7 existing tests pass. I did not add a regression test for tied timestamps, so that case is covered only by the reasoning above.",
+  "error": null,
+  "wall_time_s": 13.244,
+  "sandbox_image": "sha256:4c6052e23fa70db432b7eb6d5ee426f9fb0f31083eb0c57065a8d421b6b26438"
+}

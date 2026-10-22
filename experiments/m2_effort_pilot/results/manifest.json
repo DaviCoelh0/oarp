@@ -1,0 +1,81 @@
+{
+  "study": "M2 effort pilot: low vs medium effort on two dev tasks (model-configuration feasibility)",
+  "started": "2026-10-22T18:46:50+00:00",
+  "harness": {
+    "max_steps": 12,
+    "max_tool_calls_per_step": 1,
+    "run_tests_enabled": true,
+    "loop": "plain"
+  },
+  "efforts": [
+    "medium",
+    "low"
+  ],
+  "model_settings": {
+    "medium": {
+      "model": "claude-haiku-5-5",
+      "max_tokens": 4096,
+      "effort": "medium",
+      "thinking_display": "summarized",
+      "disable_parallel_tool_use": true,
+      "timeout_s": 60.0,
+      "max_retries": 2
+    },
+    "low": {
+      "model": "claude-haiku-5-5",
+      "max_tokens": 4096,
+      "effort": "low",
+      "thinking_display": "summarized",
+      "disable_parallel_tool_use": true,
+      "timeout_s": 60.0,
+      "max_retries": 2
+    }
+  },
+  "tasks": [
+    "feed_pagination_006",
+    "config_merge_007"
+  ],
+  "repetitions": 3,
+  "schedule": [
+    "feed_pagination_006@medium",
+    "feed_pagination_006@low",
+    "config_merge_007@medium",
+    "config_merge_007@low",
+    "feed_pagination_006@medium",
+    "feed_pagination_006@low",
+    "config_merge_007@medium",
+    "config_merge_007@low",
+    "feed_pagination_006@medium",
+    "feed_pagination_006@low",
+    "config_merge_007@medium",
+    "config_merge_007@low"
+  ],
+  "budget_usd": 0.2,
+  "worst_case_run_usd": 0.05,
+  "git": {
+    "commit": "217ccbfa81351e0859d32b7aa25fe8b407de5050",
+    "dirty": false,
+    "untracked_files": 0
+  },
+  "script_sha256": {
+    "run_effort_pilot.py": "bac1d529c11a249e1f7c7a09a8e9b696fe22fad692b1400a4151acd1e81738ea",
+    "analyze.py": "3ae8394822867847da1ffb6543b2321c1295c7be1b9c0a8a0aa11b8a782eed2a"
+  },
+  "runs": [
+    "20261022T184650-d2f5f7",
+    "20261022T184707-4931d3",
+    "20261022T184726-6d0fe8",
+    "20261022T184744-6e28b0",
+    "20261022T184802-699a5f",
+    "20261022T184825-0bc3a9",
+    "20261022T184838-3ebf79",
+    "20261022T184853-4f9daa",
+    "20261022T184908-c42094",
+    "20261022T184927-f10089",
+    "20261022T184944-8bc339",
+    "20261022T185001-a93bc5"
+  ],
+  "estimated_spend_usd": 0.036084,
+  "task_manifest_unchanged_at_end": true,
+  "finished": "2026-10-22T18:50:16+00:00"
+}

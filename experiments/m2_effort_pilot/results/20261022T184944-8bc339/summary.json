@@ -1,0 +1,55 @@
+{
+  "run_id": "20261022T184944-8bc339",
+  "task_id": "config_merge_007",
+  "split": "dev",
+  "task_format": 2,
+  "task_hash": "9c9b2fd96c3649c570f3fdfd4449bcf19e382fde7677b082b7a773ccfe9bdf7f",
+  "heldout_opt_in": false,
+  "config": {
+    "harness": {
+      "max_steps": 12,
+      "max_tool_calls_per_step": 1,
+      "run_tests_enabled": true,
+      "loop": "plain"
+    },
+    "model": {
+      "model": "claude-haiku-5-5",
+      "max_tokens": 4096,
+      "effort": "medium",
+      "thinking_display": "summarized",
+      "disable_parallel_tool_use": true,
+      "timeout_s": 60.0,
+      "max_retries": 2
+    }
+  },
+  "config_hash": "e50fdc51d5c6f10cabd0723b999bd434c7caa3bfce5c12dda1f153cd2b51c8a3",
+  "valid": true,
+  "invalid_reason": null,
+  "stop_reason": "finished",
+  "verified_success": true,
+  "verification_status": "passed",
+  "test_counts": {
+    "passed": 4
+  },
+  "public_status": "passed",
+  "hidden_status": "passed",
+  "hidden_counts": {
+    "passed": 10
+  },
+  "model_calls": 10,
+  "tool_calls_attempted": 9,
+  "tool_calls_rejected": 0,
+  "errors_by_kind": {},
+  "run_tests_calls": 1,
+  "used_test_feedback": true,
+  "input_tokens": 19512,
+  "output_tokens": 1432,
+  "estimated_cost_usd": 0.002667,
+  "models_served": [
+    "claude-haiku-5-5"
+  ],
+  "final_answer": "The leak came from `load_config` copying `DEFAULTS` shallowly (`dict(DEFAULTS)`). Nested dicts and lists such as `logging`, `logging.handlers`, and `allowed_hosts` were shared with the module-level defaults. Because `merge` writes into nested dicts and `enable_debug` appends to those lists, a change made to one returned config (e.g. enabling debug mode) showed up in configs loaded later.\n\nChanges:\n- `loader.py`: `load_config` now starts from `copy.deepcopy(DEFAULTS)` and deep-copies the overrides, so the result shares nothing with the defaults or the caller's argument.\n- `merge.py`: values taken from the override are deep-copied when assigned, so the merged result never aliases the override's lists or dicts.\n\nAll 4 tests pass. I did not add a new regression test for the leak.",
+  "error": null,
+  "wall_time_s": 17.206,
+  "sandbox_image": "sha256:4c6052e23fa70db432b7eb6d5ee426f9fb0f31083eb0c57065a8d421b6b26438"
+}

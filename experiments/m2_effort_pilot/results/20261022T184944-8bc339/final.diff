@@ -1,0 +1,34 @@
+--- a/src/appconfig/loader.py
++++ b/src/appconfig/loader.py
+@@ -1,7 +1,9 @@
++import copy
++
+ from appconfig.defaults import DEFAULTS
+ from appconfig.merge import merge
+ 
+ 
+ def load_config(overrides: dict | None = None) -> dict:
+-    config = dict(DEFAULTS)
+-    return merge(config, overrides or {})
++    config = copy.deepcopy(DEFAULTS)
++    return merge(config, copy.deepcopy(overrides or {}))
+--- a/src/appconfig/merge.py
++++ b/src/appconfig/merge.py
+@@ -1,8 +1,15 @@
++import copy
++
++
+ def merge(base: dict, override: dict) -> dict:
+-    """Combine `override` into `base`: dicts key by key, other values replaced."""
++    """Combine `override` into `base`: dicts key by key, other values replaced.
++
++    Values taken from `override` are deep-copied so the result never shares
++    mutable objects with the override.
++    """
+     for key, value in override.items():
+         if isinstance(value, dict) and isinstance(base.get(key), dict):
+             merge(base[key], value)
+         else:
+-            base[key] = value
++            base[key] = copy.deepcopy(value)
+     return base

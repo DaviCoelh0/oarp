@@ -1,0 +1,55 @@
+{
+  "run_id": "20261022T184927-f10089",
+  "task_id": "feed_pagination_006",
+  "split": "dev",
+  "task_format": 2,
+  "task_hash": "4686a7ba660b5a20c0ce38723e9d9fa0f712e67505a68db5c1ee555cbbd34c83",
+  "heldout_opt_in": false,
+  "config": {
+    "harness": {
+      "max_steps": 12,
+      "max_tool_calls_per_step": 1,
+      "run_tests_enabled": true,
+      "loop": "plain"
+    },
+    "model": {
+      "model": "claude-haiku-5-5",
+      "max_tokens": 4096,
+      "effort": "low",
+      "thinking_display": "summarized",
+      "disable_parallel_tool_use": true,
+      "timeout_s": 60.0,
+      "max_retries": 2
+    }
+  },
+  "config_hash": "fb81d4a4b7902e94a7d95eb6ed3567ba67a4effdccafdf0c28cdf9aedc6a8b09",
+  "valid": true,
+  "invalid_reason": null,
+  "stop_reason": "finished",
+  "verified_success": true,
+  "verification_status": "passed",
+  "test_counts": {
+    "passed": 7
+  },
+  "public_status": "passed",
+  "hidden_status": "passed",
+  "hidden_counts": {
+    "passed": 7
+  },
+  "model_calls": 8,
+  "tool_calls_attempted": 7,
+  "tool_calls_rejected": 0,
+  "errors_by_kind": {},
+  "run_tests_calls": 1,
+  "used_test_feedback": true,
+  "input_tokens": 19253,
+  "output_tokens": 1846,
+  "estimated_cost_usd": 0.002848,
+  "models_served": [
+    "claude-haiku-5-5"
+  ],
+  "final_answer": "Cause: the feed was ordered by created_at alone, and the page token only stored created_at, with paging using `created_at > after`. When several events shared a timestamp and a page ended partway through that group, the remaining events were skipped, so export_all returned fewer events than the store held.\n\nFix:\n- store.py: added feed_key(event) = (created_at, id) as a total order. page() now sorts by it and filters with strict tuple comparison.\n- cursor.py: the token now encodes both created_at and id; decode returns a (t, i) tuple. Malformed tokens still raise InvalidCursor.\n- export.py needed no change; it already passes the cursor's value through to the store.\n\nAll 7 existing tests pass. I did not add a regression test for tied timestamps, so that case is covered only by reasoning, not by a test.",
+  "error": null,
+  "wall_time_s": 16.953,
+  "sandbox_image": "sha256:4c6052e23fa70db432b7eb6d5ee426f9fb0f31083eb0c57065a8d421b6b26438"
+}

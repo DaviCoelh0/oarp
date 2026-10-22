@@ -1,0 +1,55 @@
+{
+  "run_id": "20261022T184650-d2f5f7",
+  "task_id": "feed_pagination_006",
+  "split": "dev",
+  "task_format": 2,
+  "task_hash": "4686a7ba660b5a20c0ce38723e9d9fa0f712e67505a68db5c1ee555cbbd34c83",
+  "heldout_opt_in": false,
+  "config": {
+    "harness": {
+      "max_steps": 12,
+      "max_tool_calls_per_step": 1,
+      "run_tests_enabled": true,
+      "loop": "plain"
+    },
+    "model": {
+      "model": "claude-haiku-5-5",
+      "max_tokens": 4096,
+      "effort": "medium",
+      "thinking_display": "summarized",
+      "disable_parallel_tool_use": true,
+      "timeout_s": 60.0,
+      "max_retries": 2
+    }
+  },
+  "config_hash": "e50fdc51d5c6f10cabd0723b999bd434c7caa3bfce5c12dda1f153cd2b51c8a3",
+  "valid": true,
+  "invalid_reason": null,
+  "stop_reason": "finished",
+  "verified_success": true,
+  "verification_status": "passed",
+  "test_counts": {
+    "passed": 7
+  },
+  "public_status": "passed",
+  "hidden_status": "passed",
+  "hidden_counts": {
+    "passed": 7
+  },
+  "model_calls": 9,
+  "tool_calls_attempted": 8,
+  "tool_calls_rejected": 0,
+  "errors_by_kind": {},
+  "run_tests_calls": 1,
+  "used_test_feedback": true,
+  "input_tokens": 25236,
+  "output_tokens": 2145,
+  "estimated_cost_usd": 0.003596,
+  "models_served": [
+    "claude-haiku-5-5"
+  ],
+  "final_answer": "Cause: the feed order and paging cursor used only `created_at`. Events sharing a timestamp were ordered arbitrarily, and the cursor filtered with `created_at > after`. So when a page ended in the middle of a run of equal timestamps, the remaining events with that timestamp were skipped.\n\nFix:\n- src/activity/store.py: the feed is now ordered by `(created_at, id)`, which is a total order since ids are unique. `page()` takes that tuple as its position and returns events strictly after it.\n- src/activity/cursor.py: tokens now encode both `t` and `i` (the last event's id). `decode` returns the `(created_at, id)` tuple and still raises `InvalidCursor` on malformed input.\n- src/activity/export.py needed no change; it passes the decoded cursor through to the store.\n\nAll 7 existing tests pass, including the shared-timestamp-across-boundary test. The test file is outside the editable set, so I did not add a dedicated regression test; the existing one covers the failing case.",
+  "error": null,
+  "wall_time_s": 17.047,
+  "sandbox_image": "sha256:4c6052e23fa70db432b7eb6d5ee426f9fb0f31083eb0c57065a8d421b6b26438"
+}

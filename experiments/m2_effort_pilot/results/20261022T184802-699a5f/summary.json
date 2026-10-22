@@ -1,0 +1,55 @@
+{
+  "run_id": "20261022T184802-699a5f",
+  "task_id": "feed_pagination_006",
+  "split": "dev",
+  "task_format": 2,
+  "task_hash": "4686a7ba660b5a20c0ce38723e9d9fa0f712e67505a68db5c1ee555cbbd34c83",
+  "heldout_opt_in": false,
+  "config": {
+    "harness": {
+      "max_steps": 12,
+      "max_tool_calls_per_step": 1,
+      "run_tests_enabled": true,
+      "loop": "plain"
+    },
+    "model": {
+      "model": "claude-haiku-5-5",
+      "max_tokens": 4096,
+      "effort": "medium",
+      "thinking_display": "summarized",
+      "disable_parallel_tool_use": true,
+      "timeout_s": 60.0,
+      "max_retries": 2
+    }
+  },
+  "config_hash": "e50fdc51d5c6f10cabd0723b999bd434c7caa3bfce5c12dda1f153cd2b51c8a3",
+  "valid": true,
+  "invalid_reason": null,
+  "stop_reason": "finished",
+  "verified_success": true,
+  "verification_status": "passed",
+  "test_counts": {
+    "passed": 7
+  },
+  "public_status": "passed",
+  "hidden_status": "passed",
+  "hidden_counts": {
+    "passed": 7
+  },
+  "model_calls": 9,
+  "tool_calls_attempted": 8,
+  "tool_calls_rejected": 0,
+  "errors_by_kind": {},
+  "run_tests_calls": 1,
+  "used_test_feedback": true,
+  "input_tokens": 25208,
+  "output_tokens": 2031,
+  "estimated_cost_usd": 0.003536,
+  "models_served": [
+    "claude-haiku-5-5"
+  ],
+  "final_answer": "Cause: the feed was ordered and paged by created_at alone. Page tokens stored only created_at and the next page filtered with `created_at > token`, so when a page boundary fell between events sharing a timestamp, the remaining events with that timestamp were silently skipped.\n\nFix:\n- store.py: feed order is now (created_at, id), which is total since ids are unique. `page` takes an (created_at, id) position and returns events strictly after it.\n- cursor.py: tokens encode both created_at and id; `decode` returns the (created_at, id) tuple and still raises InvalidCursor on malformed input.\n- export.py needed no change; it already threads the token through.\n\nAll 7 existing tests pass, including the shared-timestamp boundary test. I did not add a new test for a boundary with more than two tied events, but the tuple comparison covers that case.",
+  "error": null,
+  "wall_time_s": 23.577,
+  "sandbox_image": "sha256:4c6052e23fa70db432b7eb6d5ee426f9fb0f31083eb0c57065a8d421b6b26438"
+}
