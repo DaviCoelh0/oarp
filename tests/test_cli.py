@@ -3,6 +3,7 @@ end to end with Docker. No test here makes a paid call."""
 
 import json
 import shutil
+import sys
 from pathlib import Path
 
 import pytest
@@ -43,7 +44,8 @@ def test_dry_run_writes_a_complete_run(dry_run: Path) -> None:
     assert {p.name for p in dry_run.iterdir()} == {"trace.jsonl", "summary.json", "final.diff", "final"}
     summary = json.loads((dry_run / "summary.json").read_text())
     assert summary["config"]["model"] == {"model": "scripted-dry-run"}
-    assert summary["config"]["harness"] == {"max_steps": 12, "max_tool_calls_per_step": 1, "run_tests_enabled": True}
+    assert summary["config"]["harness"] == {"max_steps": 12, "max_tool_calls_per_step": 1,
+                                            "run_tests_enabled": True, "loop": "plain"}
 
 
 @pytest.mark.docker
@@ -71,3 +73,27 @@ def test_rescore_reproduces_a_committed_p4_run(capsys: pytest.CaptureFixture) ->
     run_dir = sorted(p for p in results.iterdir() if p.is_dir())[0]
     assert main(["rescore", str(run_dir), "--tasks-dir", str(TASKS_DIR)]) == EXIT_SUCCESS
     assert "now passed, recorded passed; file hashes match" in capsys.readouterr().out
+
+
+def test_graph_loop_without_extra_stops_before_any_call(
+    tmp_path: Path, capsys: pytest.CaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setitem(sys.modules, "langgraph.graph", None)  # makes the import fail
+    monkeypatch.delitem(sys.modules, "oarp.core.graph_loop", raising=False)
+    code = main(["run", "--task", str(TASK), "--loop", "graph", "--env-file", str(tmp_path / "missing.env"),
+                 "--runs-dir", str(tmp_path / "runs")])
+    assert code == EXIT_INVALID
+    assert "pip install -e '.[langgraph]'" in capsys.readouterr().err
+    assert not (tmp_path / "runs").exists()
+
+
+@pytest.mark.docker
+@requires_docker
+def test_dry_run_with_graph_loop(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    pytest.importorskip("langgraph")
+    code = main(["run", "--task", str(TASK), "--dry-run", "--loop", "graph", "--runs-dir", str(tmp_path)])
+    assert code == EXIT_FAILURE  # same outcome as the plain dry run
+    assert "stop reason:      finished after 2 model calls" in capsys.readouterr().out
+    (run_dir,) = [p for p in tmp_path.iterdir() if p.is_dir()]
+    summary = json.loads((run_dir / "summary.json").read_text())
+    assert summary["config"]["harness"]["loop"] == "graph"

@@ -11,7 +11,7 @@ environments are planned on the same core.
 
 | Status | |
 |---|---|
-| **Implemented and tested** | provider-neutral agent loop, Anthropic adapter, coding environment, Docker sandbox, independent verifier, JSONL tracing, `oarp` CLI (178 tests) |
+| **Implemented and tested** | provider-neutral agent loop, Anthropic adapter, coding environment, Docker sandbox, independent verifier, JSONL tracing, `oarp` CLI, optional LangGraph version of the loop (215 tests) |
 | **Measured with a real model** | a tool-calling pilot and a 15-run coding feasibility study on Claude Haiku 5.5, both small and preliminary ([results](#results-so-far)) |
 | **Not yet done** | controlled harness comparisons, held-out evaluation, automatic harness optimization, RAG |
 
@@ -42,12 +42,22 @@ task folder ──► workspace (temp copy) ──► agent loop ◄──► mo
    model as error results. A crash in our own tool code is flagged as
    `tool_bug`. Infrastructure failures (e.g. Docker down) abort the run and
    mark it **invalid**, never "failed".
+4. **Two implementations of one loop.** `run_agent` is a plain Python loop;
+   `run_graph_agent` expresses the same control flow as a LangGraph
+   `StateGraph` (a `model` node, a `tools` node, one router). Both use the
+   same step functions, model client and tool registry, and equivalence tests
+   check that scripted episodes give identical messages, stop reasons, error
+   kinds and trace events. `--loop graph` selects it; the choice is recorded
+   in the run config and its hash. The plain loop is the dependency-free
+   reference and default, and the baseline for all results so far. The graph
+   loop is a faithful port, and the place for future structural variants
+   (e.g. an added node), which would be compared against that baseline.
 
 ### Code layout
 
 | Path | Contents |
 |---|---|
-| `src/oarp/core/` | Shared and environment-independent: types, `ModelClient` protocol + scripted model, tool registry, loop, tracing, pricing |
+| `src/oarp/core/` | Shared and environment-independent: types, `ModelClient` protocol + scripted model, tool registry, loop (plain and optional LangGraph), tracing, pricing |
 | `src/oarp/providers/` | `AnthropicModel`: the only module that knows Anthropic's API format |
 | `src/oarp/envs/coding/` | Coding environment: task loader, workspace and allowlist, sandbox, tools, verifier, runner |
 | `src/oarp/cli.py` | `oarp run` / `oarp rescore` |
@@ -67,12 +77,14 @@ an Anthropic API key only for paid runs. Every command below was run on
 ```bash
 python3 -m venv venv
 venv/bin/python -m pip install -e '.[dev]'
+venv/bin/python -m pip install -e '.[langgraph]'  # optional: the graph loop (--loop graph)
 docker build -t oarp-sandbox:0.1 -f docker/sandbox.Dockerfile docker
 ```
 
 ```bash
-venv/bin/python -m pytest -q                      # 178 passed, 1 skipped (opt-in live test)
-venv/bin/python -m pytest -q -m "not docker"      # without Docker: 148 passed
+venv/bin/python -m pytest -q                      # 215 passed, 1 skipped (opt-in live test)
+                                                  # without the langgraph extra: 181 passed, 4 skipped
+venv/bin/python -m pytest -q -m "not docker"      # without Docker: 183 passed, 1 skipped
 ```
 
 Free, scripted dry run through the full pipeline (no API calls; the scripted
@@ -80,6 +92,7 @@ model changes nothing, so the task is correctly scored as failed):
 
 ```bash
 venv/bin/oarp run --task tasks/coding/dev/off_by_one_001 --dry-run
+venv/bin/oarp run --task tasks/coding/dev/off_by_one_001 --dry-run --loop graph  # same run, graph loop
 ```
 
 **Paid** run with Claude Haiku 5.5. It needs `ANTHROPIC_API_KEY=...` in a

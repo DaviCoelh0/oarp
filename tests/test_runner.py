@@ -2,6 +2,8 @@
 -> trace files. Deterministic and free; needs Docker for the tests and verifier."""
 
 import json
+import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -136,3 +138,44 @@ def test_no_secrets_in_run_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         if path.is_file():
             text = path.read_text()
             assert "sk-ant" not in text and "FAKE-SECRET" not in text
+
+
+# Fields that legitimately differ between two runs of the same script.
+VOLATILE = {"ts", "t_s", "latency_s", "duration_s", "run_id", "config", "config_hash", "wall_time_s"}
+
+
+PYTEST_DURATION = re.compile(r" in \d+\.\d+s\b")  # "5 passed in 0.01s" varies run to run
+
+
+def comparable(record: dict) -> dict:
+    return {k: PYTEST_DURATION.sub(" in <t>s", v) if k in ("content", "output") else v
+            for k, v in record.items() if k not in VOLATILE}
+
+
+@pytest.mark.docker
+@requires_docker
+def test_graph_loop_run_matches_plain_run(tmp_path: Path) -> None:
+    pytest.importorskip("langgraph")
+    script = [*FIX, call("finish", "c5", answer="Fixed the range bound.")]
+    plain, plain_dir = run(script, tmp_path)
+    graph, graph_dir = run(script, tmp_path, loop="graph")
+
+    assert graph["valid"] and graph["verified_success"] and graph["stop_reason"] == "finished"
+    assert (plain["config"]["harness"]["loop"], graph["config"]["harness"]["loop"]) == ("plain", "graph")
+    assert plain["config_hash"] != graph["config_hash"]  # the loop implementation is part of the config
+    assert comparable(graph) == comparable(plain)
+    assert [comparable(e) for e in events(graph_dir)] == [comparable(e) for e in events(plain_dir)]
+    assert events(graph_dir)[0]["provenance"]["langgraph"] is not None
+
+
+def test_graph_loop_without_extra_fails_before_writing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(sys.modules, "langgraph.graph", None)  # makes the import fail
+    monkeypatch.delitem(sys.modules, "oarp.core.graph_loop", raising=False)
+    with pytest.raises(ImportError, match=r"\[langgraph\]"):
+        run([call("finish", "c1", answer="x")], tmp_path, loop="graph")
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_unknown_loop_is_rejected(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="unknown loop"):
+        run([call("finish", "c1", answer="x")], tmp_path, loop="dag")

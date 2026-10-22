@@ -1,6 +1,6 @@
 """Command-line entry point.
 
-    python -m oarp run --task tasks/coding/dev/off_by_one_001 [--dry-run]
+    python -m oarp run --task tasks/coding/dev/off_by_one_001 [--dry-run] [--loop graph]
     python -m oarp rescore runs/<run_id>
 
 `run` executes one coding task with Claude Haiku 5.5 (PAID; the same model
@@ -21,13 +21,13 @@ from pathlib import Path
 from oarp.core.env import read_env_value
 from oarp.core.model import ScriptedModel
 from oarp.core.types import ModelResponse, ToolCall
-from oarp.envs.coding.runner import HarnessConfig, run_coding_task
+from oarp.envs.coding.runner import HarnessConfig, loop_function, run_coding_task
 from oarp.envs.coding.task import discover_tasks, load_task
 from oarp.envs.coding.verify import verify
 
 EXIT_SUCCESS, EXIT_FAILURE, EXIT_INVALID = 0, 1, 3
 # Defaults are the P4 study's harness, so a CLI run is comparable to P4 runs.
-DEFAULT_HARNESS = HarnessConfig(max_steps=12, max_tool_calls_per_step=1, run_tests_enabled=True)
+DEFAULT_HARNESS = HarnessConfig(max_steps=12, max_tool_calls_per_step=1, run_tests_enabled=True, loop="plain")
 WORST_CASE_USD_PER_CALL = 10_000 * 0.10e-6 + 4096 * 0.50e-6  # Haiku 5.5, prompt <= 100K
 
 
@@ -45,6 +45,8 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--max-steps", type=int, default=DEFAULT_HARNESS.max_steps)
     run.add_argument("--max-tool-calls-per-step", type=int, default=DEFAULT_HARNESS.max_tool_calls_per_step)
     run.add_argument("--no-run-tests", action="store_true", help="do not offer the run_tests tool")
+    run.add_argument("--loop", choices=["plain", "graph"], default=DEFAULT_HARNESS.loop,
+                     help="loop implementation: plain (default) or graph (needs the langgraph extra)")
     run.add_argument("--runs-dir", type=Path, default=Path("runs"), help="where run folders are written")
     run.add_argument("--env-file", type=Path, default=Path(".env"), help="file with ANTHROPIC_API_KEY")
     run.add_argument("--dry-run", action="store_true", help="scripted model: no API calls, no cost")
@@ -59,7 +61,12 @@ def _parser() -> argparse.ArgumentParser:
 
 def _run(args: argparse.Namespace) -> int:
     task = load_task(args.task)
-    harness = HarnessConfig(args.max_steps, args.max_tool_calls_per_step, not args.no_run_tests)
+    harness = HarnessConfig(args.max_steps, args.max_tool_calls_per_step, not args.no_run_tests, args.loop)
+    try:
+        loop_function(harness.loop)  # check before anything (a paid call included) starts
+    except ImportError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return EXIT_INVALID
 
     if args.dry_run:
         model = ScriptedModel([

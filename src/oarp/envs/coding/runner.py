@@ -11,10 +11,11 @@ INVALID instead of scoring it as an agent failure.
 import json
 import platform
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from importlib import metadata
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from oarp.core.loop import run_agent
 from oarp.core.model import ModelClient
@@ -36,6 +37,25 @@ class HarnessConfig:
     max_steps: int = 10
     max_tool_calls_per_step: int = 1
     run_tests_enabled: bool = True
+    # Which implementation of the same loop runs the episode: "plain" is
+    # oarp.core.loop.run_agent, "graph" is the LangGraph version
+    # (oarp.core.graph_loop, optional extra). Recorded in the config hash.
+    loop: Literal["plain", "graph"] = "plain"
+
+
+def loop_function(name: str) -> Callable[..., RunResult]:
+    """The loop implementation named by HarnessConfig.loop."""
+    if name == "plain":
+        return run_agent
+    if name == "graph":
+        try:
+            from oarp.core.graph_loop import run_graph_agent
+        except ImportError as exc:
+            raise ImportError(
+                "the graph loop needs the optional extra: pip install -e '.[langgraph]'"
+            ) from exc
+        return run_graph_agent
+    raise ValueError(f"unknown loop implementation: {name!r}")
 
 
 def run_coding_task(
@@ -48,6 +68,7 @@ def run_coding_task(
 ) -> dict[str, Any]:
     """`model_settings` describes the model as configured (e.g. asdict(AnthropicSettings())),
     so the configuration hash covers both harness and model."""
+    run_loop = loop_function(harness.loop)  # fails before any run files are written
     run_id = new_run_id()
     run_dir = runs_dir / run_id
     config = {"harness": asdict(harness), "model": model_settings}
@@ -70,7 +91,7 @@ def run_coding_task(
             "provenance": _provenance(),
         })
         try:
-            result = run_agent(
+            result = run_loop(
                 model, ToolRegistry(tools), system_prompt=SYSTEM_PROMPT, task_prompt=prompt,
                 max_steps=harness.max_steps, max_tool_calls_per_step=harness.max_tool_calls_per_step,
                 on_event=tracer.emit,
@@ -143,7 +164,8 @@ def _provenance() -> dict[str, Any]:
             return None
 
     return {"git": git_info(REPO_ROOT), "python": platform.python_version(),
-            "anthropic_sdk": version("anthropic"), "platform": platform.platform()}
+            "anthropic_sdk": version("anthropic"), "langgraph": version("langgraph"),
+            "platform": platform.platform()}
 
 
 def _save_final_files(run_dir: Path, files: dict[str, str], v: VerificationResult) -> None:
