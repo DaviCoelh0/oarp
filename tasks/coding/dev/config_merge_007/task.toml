@@ -1,0 +1,8 @@
+id = "config_merge_007"
+split = "dev"
+format = 2
+source = ["https://github.com/glenselle/nACH2/pull/31"]
+prompt = """A user reports that after one part of the app changes its configuration, configurations loaded later contain those changes. Find and fix the cause. The intended behaviour is described in README.md."""
+editable = ["src/appconfig/defaults.py", "src/appconfig/loader.py", "src/appconfig/merge.py", "src/appconfig/modes.py"]
+test_command = ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "-o", "pythonpath=src", "tests"]
+timeout_s = 30
