@@ -20,3 +20,8 @@ requires_docker = pytest.mark.skipif(
     reason="Docker daemon or oarp-sandbox image unavailable "
     "(docker build -t oarp-sandbox:0.1 -f docker/sandbox.Dockerfile docker)",
 )
+
+# Fixture tasks contain their own test_*.py files, which belong to the fixture,
+# not to oarp's suite.
+collect_ignore_glob = ["fixtures/*"]
+FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures" / "tasks"

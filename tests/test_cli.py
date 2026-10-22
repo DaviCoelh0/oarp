@@ -66,13 +66,31 @@ def test_rescore_detects_altered_saved_files(dry_run: Path, tmp_path: Path, caps
     assert "file hashes DIFFER" in capsys.readouterr().out
 
 
+EXPERIMENTS = TASKS_DIR.parent / "experiments"
+COMMITTED_RUNS = sorted(p.parent for p in EXPERIMENTS.glob("*/**/summary.json"))
+
+
 @pytest.mark.docker
 @requires_docker
-def test_rescore_reproduces_a_committed_p4_run(capsys: pytest.CaptureFixture) -> None:
-    results = TASKS_DIR.parent / "experiments" / "p4_feasibility" / "results"
-    run_dir = sorted(p for p in results.iterdir() if p.is_dir())[0]
+@pytest.mark.parametrize("run_dir", COMMITTED_RUNS, ids=[p.name for p in COMMITTED_RUNS])
+def test_rescore_reproduces_every_committed_run(run_dir: Path, capsys: pytest.CaptureFixture) -> None:
+    # Backward compatibility: format-2 support must not change any recorded result.
     assert main(["rescore", str(run_dir), "--tasks-dir", str(TASKS_DIR)]) == EXIT_SUCCESS
     assert "now passed, recorded passed; file hashes match" in capsys.readouterr().out
+
+
+def test_committed_runs_were_found() -> None:
+    assert len(COMMITTED_RUNS) == 16  # 15 P4 runs + 1 CLI run
+
+
+def test_heldout_task_needs_flag(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    root = tmp_path / "test" / "off_by_one_001"
+    shutil.copytree(TASK, root)
+    (root / "task.toml").write_text((root / "task.toml").read_text().replace('split = "dev"', 'split = "test"'))
+    code = main(["run", "--task", str(root), "--dry-run", "--runs-dir", str(tmp_path / "runs")])
+    assert code == EXIT_INVALID
+    assert "held-out task; pass --heldout" in capsys.readouterr().err
+    assert not (tmp_path / "runs").exists()
 
 
 def test_graph_loop_without_extra_stops_before_any_call(

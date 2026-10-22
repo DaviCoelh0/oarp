@@ -11,7 +11,7 @@ environments are planned on the same core.
 
 | Status | |
 |---|---|
-| **Implemented and tested** | provider-neutral agent loop, Anthropic adapter, coding environment, Docker sandbox, independent verifier, JSONL tracing, `oarp` CLI, optional LangGraph version of the loop (215 tests) |
+| **Implemented and tested** | provider-neutral agent loop, Anthropic adapter, coding environment, Docker sandbox, independent verifier, JSONL tracing, `oarp` CLI, optional LangGraph version of the loop, task format with hidden tests and wrong candidate fixes, frozen task-set manifests (300 tests) |
 | **Measured with a real model** | a tool-calling pilot and a 15-run coding feasibility study on Claude Haiku 5.5, both small and preliminary ([results](#results-so-far)) |
 | **Not yet done** | controlled harness comparisons, held-out evaluation, automatic harness optimization, RAG |
 
@@ -25,7 +25,7 @@ task folder ──► workspace (temp copy) ──► agent loop ◄──► mo
                                               │
                          final editable files only
                                               ▼
-                   independent verifier: fresh copy + pristine tests ──► passed / failed / invalid
+          independent verifier: fresh copy + pristine public tests (+ hidden tests) ──► passed / failed / invalid
                                               │
                    runs/<run_id>/  trace.jsonl · summary.json · final.diff · final/
 ```
@@ -53,14 +53,35 @@ task folder ──► workspace (temp copy) ──► agent loop ◄──► mo
    loop is a faithful port, and the place for future structural variants
    (e.g. an added node), which would be compared against that baseline.
 
+### Tasks and evaluation levels
+
+A task is a folder: `task.toml`, a starting `repo/` (source plus the
+**public tests** the agent can read and run), and a reference `solution/` the
+agent never sees. Format 2 adds `hidden_tests/`, which only the verifier runs
+(in a second fresh container, on the same final files), and `decoys/`:
+deliberately wrong but plausible fixes. Before a task is used, automated
+checks require that the original fails its public tests, the reference
+passes public and hidden tests, every decoy fails, at least one decoy fails
+the public tests, and the starting repo does not contain the reference or a
+decoy. Results report public and hidden outcomes separately, so a fix that
+only fits the visible tests shows up as a failure.
+
+Three levels are kept apart: public tests (seen by the agent), hidden tests
+of development tasks (never seen by the agent, but their scores may guide
+task selection and tuning), and **held-out** tasks (`split = "test"`), which
+are not loaded or run without an explicit opt-in and are never used for
+tuning. Hidden-test output is written only to a run's `private/` folder,
+which is not published. `oarp tasks freeze` records a hash of every task file
+in a manifest; `oarp tasks check` fails if any task changed since.
+
 ### Code layout
 
 | Path | Contents |
 |---|---|
 | `src/oarp/core/` | Shared and environment-independent: types, `ModelClient` protocol + scripted model, tool registry, loop (plain and optional LangGraph), tracing, pricing |
 | `src/oarp/providers/` | `AnthropicModel`: the only module that knows Anthropic's API format |
-| `src/oarp/envs/coding/` | Coding environment: task loader, workspace and allowlist, sandbox, tools, verifier, runner |
-| `src/oarp/cli.py` | `oarp run` / `oarp rescore` |
+| `src/oarp/envs/coding/` | Coding environment: task loader, workspace and allowlist, sandbox, tools, verifier, runner, task validity checks, task-set manifests |
+| `src/oarp/cli.py` | `oarp run` / `oarp rescore` / `oarp tasks freeze\|check` |
 | `tasks/coding/dev/` | 5 development tasks, each with a reference solution the agent never sees |
 | `docker/` | Sandbox image: base image pinned by digest, packages pinned by version and hash |
 | `experiments/` | Studies with their scripts, raw results and READMEs |
@@ -102,6 +123,8 @@ client-side *estimate*, so set a spend limit in your Anthropic Console.
 ```bash
 venv/bin/oarp run --task tasks/coding/dev/off_by_one_001 --runs-dir runs
 venv/bin/oarp rescore runs/<run_id>               # re-verify the saved files, compare hashes
+venv/bin/oarp tasks freeze --split dev --output manifest.json   # hash every dev task
+venv/bin/oarp tasks check manifest.json           # fails if any task changed since
 ```
 
 `oarp run` exits with 0 (verified success), 1 (verified failure) or 3
@@ -163,12 +186,13 @@ their absence. The CPU and `/tmp` size limits are set but not tested.
 **Limitations:** containers share the Docker Desktop VM's
 kernel, so this protects against accidental damage and score-gaming by buggy
 code, not against a determined attacker. It also cannot stop a "fix" that
-special-cases the visible test inputs: hidden tests are planned, and passing
-diffs are reviewed by hand until then.
+special-cases the visible test inputs. Format-2 tasks catch this with hidden
+tests (no such task exists yet), and passing diffs are reviewed by hand.
 
 **Reproducibility.** Every trace records the git commit (and whether tracked
 files were modified), hashes of the prompts, tools and configuration, the
-model ID the API reported, SDK and Python versions, and the sandbox image ID.
+model ID the API reported, SDK and Python versions, the sandbox image ID, and
+a hash of every file in the task folder.
 The image's inputs are pinned, but Docker builds are not bit-for-bit
 reproducible: a rebuild gets a new image ID with the same package versions.
 The committed P4 and CLI runs still rescore identically on a rebuilt image.
@@ -177,7 +201,7 @@ temperature), so results are reported over repeated runs.
 
 ## What's next
 
-1. **Informative tasks:** less revealing specifications, multi-file bugs, and tasks where a plausible first fix fails, so test feedback can matter. A separate held-out set is never used for tuning.
+1. **Informative tasks:** less revealing specifications, multi-file bugs, and tasks where a plausible first fix fails, so test feedback can matter. A separate held-out set is never used for tuning. The task format and checks for this exist; the tasks themselves are not written yet.
 2. **One controlled comparison:** fixed model, settings, tasks and verifier, changing a single harness variable (e.g. `run_tests` available or not), with repeated runs and uncertainty reported. Better metrics too: tests *run* vs. failing results *seen* vs. an edit made *after* a failure.
 3. **Harness optimization:** a bounded search over harness configurations on dev tasks, validated on held-out tasks.
 4. **RAG environment:** retrieval tools and retrieval-specific evaluation on the same core.

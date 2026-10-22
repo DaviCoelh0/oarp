@@ -6,6 +6,11 @@ Each run writes runs/<run_id>/trace.jsonl (events as they happen),
 summary.json (one record for analysis), final.diff and final/<editable files>
 (so the run can be re-scored later). Infrastructure failures mark the run
 INVALID instead of scoring it as an agent failure.
+
+Hidden-test output (format-2 tasks) goes only to private/verifier_hidden.txt;
+trace and summary keep its status and counts, never its text, so they can be
+published without revealing the hidden tests. Held-out tasks run only with an
+explicit `allow_heldout=True`.
 """
 
 import json
@@ -22,12 +27,18 @@ from oarp.core.model import ModelClient
 from oarp.core.tools import InfrastructureError, ToolRegistry
 from oarp.core.trace import JsonlTracer, git_info, new_run_id, sha256_text, stable_hash
 from oarp.core.types import ErrorKind, RunResult
-from oarp.envs.coding.task import CodingTask
+from oarp.envs.coding.task import CodingTask, task_hash
 from oarp.envs.coding.tools import SYSTEM_PROMPT, coding_tools, task_prompt
 from oarp.envs.coding.verify import VerificationResult, final_files, verify
 from oarp.envs.coding.workspace import Workspace
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
+PRIVATE_DIR = "private"  # gitignored: hidden-test output, never published
+HIDDEN_OUTPUT_FILE = "verifier_hidden.txt"
+
+
+class HeldOutError(ValueError):
+    """A held-out task was about to run without an explicit opt-in."""
 
 
 @dataclass(frozen=True)
@@ -65,15 +76,19 @@ def run_coding_task(
     *,
     model_settings: dict[str, Any],
     runs_dir: Path,
+    allow_heldout: bool = False,
 ) -> dict[str, Any]:
     """`model_settings` describes the model as configured (e.g. asdict(AnthropicSettings())),
     so the configuration hash covers both harness and model."""
+    if task.heldout and not allow_heldout:
+        raise HeldOutError(f"task '{task.id}' is held out; running it needs allow_heldout=True")
     run_loop = loop_function(harness.loop)  # fails before any run files are written
     run_id = new_run_id()
     run_dir = runs_dir / run_id
     config = {"harness": asdict(harness), "model": model_settings}
     summary: dict[str, Any] = {
         "run_id": run_id, "task_id": task.id, "split": task.split,
+        "task_format": task.format, "task_hash": task_hash(task), "heldout_opt_in": allow_heldout,
         "config": config, "config_hash": stable_hash(config),
     }
 
@@ -109,6 +124,10 @@ def run_coding_task(
         summary.update(_summarize(result, verification, tracer))
 
     _save_final_files(run_dir, files, verification)
+    if verification.hidden is not None:
+        private = run_dir / PRIVATE_DIR
+        private.mkdir()
+        (private / HIDDEN_OUTPUT_FILE).write_text(verification.hidden.output)
     _write_json(run_dir / "summary.json", summary)
     return summary
 
@@ -126,7 +145,10 @@ def _summarize(result: RunResult, v: VerificationResult, tracer: JsonlTracer) ->
         "stop_reason": result.stop_reason,
         "verified_success": v.passed,
         "verification_status": v.status,
-        "test_counts": v.counts,
+        "test_counts": v.counts,  # public tests
+        "public_status": v.public.status,
+        "hidden_status": v.hidden.status if v.hidden else None,
+        "hidden_counts": v.hidden.counts if v.hidden else None,
         "model_calls": len(result.steps),
         "tool_calls_attempted": len(attempted),
         "tool_calls_rejected": len(rejected),
@@ -149,11 +171,17 @@ def _cost(tracer: JsonlTracer) -> float | None:
 
 
 def _verification_fields(v: VerificationResult) -> dict[str, Any]:
-    return {
+    """`output` is the PUBLIC test output only; the hidden part contributes its
+    status, exit code and counts but never its text."""
+    fields = {
         "status": v.status, "passed": v.passed, "valid": v.valid, "exit_code": v.exit_code,
         "counts": v.counts, "file_hashes": v.file_hashes, "duration_s": round(v.duration_s, 3),
         "image_id": v.image_id, "output": v.output,
     }
+    if v.hidden is not None:
+        fields.update(public_status=v.public.status, hidden_status=v.hidden.status,
+                      hidden_exit_code=v.hidden.exit_code, hidden_counts=v.hidden.counts)
+    return fields
 
 
 def _provenance() -> dict[str, Any]:

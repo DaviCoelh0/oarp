@@ -7,3 +7,7 @@ __pycache__/
 .env
 runs/
 CLAUDE.md
+# Held-out tasks stay private while they are reused as held-out material.
+tasks/coding/test/
+# Hidden-test output of a run; never published.
+private/

@@ -1,0 +1,8 @@
+id = "count_words_f2"
+split = "dev"
+format = 2
+source = ["https://example.org/fixture-only"]
+prompt = "Word counts are too high for some inputs. Make count_words match its documented behaviour."
+editable = ["src/words.py"]
+test_command = ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "-o", "pythonpath=src", "tests"]
+timeout_s = 30

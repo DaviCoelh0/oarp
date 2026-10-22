@@ -39,8 +39,14 @@ class Workspace:
 
     @classmethod
     @contextmanager
-    def create(cls, task: CodingTask, base_dir: Path | None = None) -> Iterator["Workspace"]:
-        """Copy the task into a fresh temp folder; delete it afterwards."""
+    def create(
+        cls, task: CodingTask, base_dir: Path | None = None, *, tests_from: Path | None = None
+    ) -> Iterator["Workspace"]:
+        """Copy the task into a fresh temp folder; delete it afterwards.
+
+        `tests_from` replaces the snapshot mounted over tests/ (default: the
+        public tests). The verifier passes the hidden tests here; they are
+        copied next to the workspace, never into it, so no tool can reach them."""
         base = Path(tempfile.mkdtemp(prefix=f"oarp-{task.id}-", dir=base_dir))
         try:
             # mkdtemp creates the folder as 0700; the sandbox runs as another
@@ -48,7 +54,7 @@ class Workspace:
             base.chmod(0o755)
             root, pristine_tests = base / "work", base / "pristine_tests"
             shutil.copytree(task.repo_dir, root)
-            shutil.copytree(task.tests_dir, pristine_tests)
+            shutil.copytree(tests_from or task.tests_dir, pristine_tests)
             yield cls(root, pristine_tests, task)
         finally:
             shutil.rmtree(base, ignore_errors=True)

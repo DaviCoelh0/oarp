@@ -5,6 +5,13 @@ files alone, never from anything the agent reported or ran.
     fresh pristine-tests snapshot mounted over /work/tests
     task.test_command in the sandbox            ->  VerificationResult
 
+Format-2 tasks get a second run on the same final files in another fresh
+workspace, with the hidden tests mounted over /work/tests instead (the same
+command). Both parts are always run and reported separately, so overfitting to
+the public tests is visible; success needs both to pass. Hidden-test output is
+kept on `hidden.output` only: callers must keep it out of anything the agent
+sees and out of public artifacts.
+
 It is the fixed measuring instrument: identical for every harness
 configuration (with or without run_tests), and it runs regardless of how the
 agent's run ended (a MAX_STEPS run may still have solved the task).
@@ -15,6 +22,7 @@ import hashlib
 import re
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 
 from oarp.envs.coding.sandbox import run_in_sandbox
 from oarp.envs.coding.task import CodingTask
@@ -31,15 +39,50 @@ class VerificationStatus(StrEnum):
 
 
 @dataclass(frozen=True)
-class VerificationResult:
+class SuiteRun:
+    """One test-suite run (public or hidden) against the final files."""
+
     status: VerificationStatus
     exit_code: int | None
     counts: dict[str, int] | None  # test outcomes; only when the tests ran (exit 0 or 1)
-    file_hashes: dict[str, str]  # sha256 of each verified editable file
-    diff: str  # unified diff, original -> final, of the editable files
     output: str  # capped test output, for failure analysis
     duration_s: float
+
+
+@dataclass(frozen=True)
+class VerificationResult:
+    public: SuiteRun
+    hidden: SuiteRun | None  # None for format-1 tasks
+    file_hashes: dict[str, str]  # sha256 of each verified editable file
+    diff: str  # unified diff, original -> final, of the editable files
     image_id: str
+
+    @property
+    def status(self) -> VerificationStatus:
+        """Overall status. A harness error in either part makes the whole
+        measurement invalid; otherwise the public result decides unless it
+        passed, in which case the hidden result does."""
+        parts = [self.public] if self.hidden is None else [self.public, self.hidden]
+        if any(p.status is VerificationStatus.HARNESS_ERROR for p in parts):
+            return VerificationStatus.HARNESS_ERROR
+        return parts[-1].status if self.public.status is VerificationStatus.PASSED else self.public.status
+
+    # The public part under the names format-1 callers already use.
+    @property
+    def exit_code(self) -> int | None:
+        return self.public.exit_code
+
+    @property
+    def counts(self) -> dict[str, int] | None:
+        return self.public.counts
+
+    @property
+    def output(self) -> str:
+        return self.public.output
+
+    @property
+    def duration_s(self) -> float:
+        return self.public.duration_s + (self.hidden.duration_s if self.hidden else 0.0)
 
     @property
     def passed(self) -> bool:
@@ -66,29 +109,45 @@ def verify(task: CodingTask, files: dict[str, str]) -> VerificationResult:
     if not_editable:
         raise ValueError(f"verifier only accepts editable files, got: {not_editable}")
 
-    with Workspace.create(task) as fresh:
+    public, originals, image = _run_suite(task, files, tests_from=None)
+    hidden = None
+    if task.hidden_tests_dir is not None:
+        hidden, _, _ = _run_suite(task, files, tests_from=task.hidden_tests_dir)
+
+    final = {rel: files.get(rel, originals[rel]) for rel in task.editable}
+    return VerificationResult(
+        public=public,
+        hidden=hidden,
+        file_hashes={rel: hashlib.sha256(text.encode("utf-8")).hexdigest() for rel, text in final.items()},
+        diff=_diff(originals, final),
+        image_id=image,
+    )
+
+
+def _run_suite(
+    task: CodingTask, files: dict[str, str], *, tests_from: Path | None
+) -> tuple[SuiteRun, dict[str, str], str]:
+    """One run of task.test_command in a fresh workspace holding the final files."""
+    with Workspace.create(task, tests_from=tests_from) as fresh:
         originals = {rel: fresh.read_text(rel) for rel in task.editable}
         for rel, content in files.items():
             fresh.write_text(rel, content)
         result = run_in_sandbox(list(task.test_command), fresh.sandbox_mounts(), timeout_s=task.timeout_s)
 
-    final = {rel: files.get(rel, originals[rel]) for rel in task.editable}
     output = result.stdout + (f"\n--- stderr ---\n{result.stderr}" if result.stderr.strip() else "")
     status = status_for(result.exit_code, result.timed_out)
     # Counts describe test outcomes only if pytest actually ran the tests. After a
     # collection error, harness error, timeout or kill, any "N error"/"N warning"
     # in the output describes something else, so it is not reported as counts.
     tests_ran = status in (VerificationStatus.PASSED, VerificationStatus.TESTS_FAILED)
-    return VerificationResult(
+    run = SuiteRun(
         status=status,
         exit_code=result.exit_code,
         counts=parse_counts(result.stdout) if tests_ran else None,
-        file_hashes={rel: hashlib.sha256(text.encode("utf-8")).hexdigest() for rel, text in final.items()},
-        diff=_diff(originals, final),
         output=output,
         duration_s=result.duration_s,
-        image_id=result.image_id,
     )
+    return run, originals, result.image_id
 
 
 def status_for(exit_code: int | None, timed_out: bool) -> VerificationStatus:

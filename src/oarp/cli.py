@@ -2,11 +2,15 @@
 
     python -m oarp run --task tasks/coding/dev/off_by_one_001 [--dry-run] [--loop graph]
     python -m oarp rescore runs/<run_id>
+    python -m oarp tasks freeze --split dev [--ids a b ...] --output manifest.json
+    python -m oarp tasks check manifest.json
 
 `run` executes one coding task with Claude Haiku 5.5 (PAID; the same model
 settings as the P4 study) or, with --dry-run, with a free scripted model.
 `rescore` re-scores a saved run from its final/ files with the independent
-verifier and checks that the result matches what was recorded.
+verifier and checks that the result matches what was recorded. `tasks freeze`
+writes a manifest of task hashes; `tasks check` fails if any task changed.
+Held-out tasks (split "test") run only with `run --heldout`.
 
 Exit codes: 0 = verified success / rescore reproduced, 1 = verified failure /
 rescore mismatch, 3 = invalid run (infrastructure or harness error).
@@ -21,8 +25,9 @@ from pathlib import Path
 from oarp.core.env import read_env_value
 from oarp.core.model import ScriptedModel
 from oarp.core.types import ModelResponse, ToolCall
+from oarp.envs.coding.manifest import check_manifest, write_manifest
 from oarp.envs.coding.runner import HarnessConfig, loop_function, run_coding_task
-from oarp.envs.coding.task import discover_tasks, load_task
+from oarp.envs.coding.task import SPLITS, discover_tasks, load_task
 from oarp.envs.coding.verify import verify
 
 EXIT_SUCCESS, EXIT_FAILURE, EXIT_INVALID = 0, 1, 3
@@ -50,17 +55,36 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--runs-dir", type=Path, default=Path("runs"), help="where run folders are written")
     run.add_argument("--env-file", type=Path, default=Path(".env"), help="file with ANTHROPIC_API_KEY")
     run.add_argument("--dry-run", action="store_true", help="scripted model: no API calls, no cost")
+    run.add_argument("--heldout", action="store_true",
+                     help="allow a held-out (split 'test') task; only for the final evaluation")
     run.set_defaults(handler=_run)
 
     rescore = commands.add_parser("rescore", help="re-verify a saved run from its final files")
     rescore.add_argument("run_dir", type=Path)
     rescore.add_argument("--tasks-dir", type=Path, default=Path("tasks"), help="where to find the run's task")
     rescore.set_defaults(handler=_rescore)
+
+    tasks = commands.add_parser("tasks", help="freeze or check a task-set manifest")
+    task_commands = tasks.add_subparsers(required=True, metavar="action")
+    freeze = task_commands.add_parser("freeze", help="write a manifest of task hashes")
+    freeze.add_argument("--split", choices=SPLITS, required=True)
+    freeze.add_argument("--ids", nargs="+", help="only these task ids (default: all of the split)")
+    freeze.add_argument("--tasks-dir", type=Path, default=Path("tasks"))
+    freeze.add_argument("--output", type=Path, required=True)
+    freeze.set_defaults(handler=_freeze)
+    check = task_commands.add_parser("check", help="verify tasks still match a manifest")
+    check.add_argument("manifest", type=Path)
+    check.add_argument("--tasks-dir", type=Path, default=Path("tasks"))
+    check.set_defaults(handler=_check)
     return parser
 
 
 def _run(args: argparse.Namespace) -> int:
     task = load_task(args.task)
+    if task.heldout and not args.heldout:
+        print(f"error: {task.id} is a held-out task; pass --heldout only for the final evaluation",
+              file=sys.stderr)
+        return EXIT_INVALID
     harness = HarnessConfig(args.max_steps, args.max_tool_calls_per_step, not args.no_run_tests, args.loop)
     try:
         loop_function(harness.loop)  # check before anything (a paid call included) starts
@@ -87,7 +111,8 @@ def _run(args: argparse.Namespace) -> int:
         print(f"PAID run with {model_settings.model}: at most {harness.max_steps} model calls, "
               f"worst case about ${harness.max_steps * WORST_CASE_USD_PER_CALL:.3f} (estimate).")
 
-    summary = run_coding_task(task, model, harness, model_settings=settings, runs_dir=args.runs_dir)
+    summary = run_coding_task(task, model, harness, model_settings=settings, runs_dir=args.runs_dir,
+                              allow_heldout=args.heldout)
     run_dir = args.runs_dir / summary["run_id"]
     if not summary["valid"]:
         print(f"INVALID run {summary['run_id']}: {summary['invalid_reason']}\nfiles: {run_dir}")
@@ -114,7 +139,8 @@ def _rescore(args: argparse.Namespace) -> int:
         json.loads(line) for line in (args.run_dir / "trace.jsonl").read_text().splitlines()
         if json.loads(line)["event"] == "verification"
     )
-    tasks = {t.id: t for t in discover_tasks(args.tasks_dir)}
+    # Rescoring runs no model, so held-out tasks may be loaded here.
+    tasks = {t.id: t for t in discover_tasks(args.tasks_dir, include_heldout=True)}
     task = tasks.get(summary["task_id"])
     if task is None:
         print(f"task {summary['task_id']} not found under {args.tasks_dir}", file=sys.stderr)
@@ -124,6 +150,34 @@ def _rescore(args: argparse.Namespace) -> int:
     result = verify(task, files)
     same_files = result.file_hashes == recorded["file_hashes"]
     same_status = result.status == recorded["status"]
+    if "hidden_status" in recorded:
+        same_status = same_status and result.hidden is not None and result.hidden.status == recorded["hidden_status"]
     print(f"rescore {summary['run_id']} ({task.id}): now {result.status}, recorded {recorded['status']}; "
           f"file hashes {'match' if same_files else 'DIFFER'}")
     return EXIT_SUCCESS if same_files and same_status else EXIT_FAILURE
+
+
+def _freeze(args: argparse.Namespace) -> int:
+    tasks = [t for t in discover_tasks(args.tasks_dir, include_heldout=True) if t.split == args.split]
+    if args.ids:
+        unknown = sorted(set(args.ids) - {t.id for t in tasks})
+        if unknown:
+            print(f"error: no {args.split} task(s) named {unknown} under {args.tasks_dir}", file=sys.stderr)
+            return EXIT_INVALID
+        tasks = [t for t in tasks if t.id in set(args.ids)]
+    try:
+        manifest = write_manifest(tasks, args.output)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return EXIT_INVALID
+    print(f"froze {len(manifest['tasks'])} {args.split} task(s) to {args.output} (set {manifest['set_hash'][:12]})")
+    return EXIT_SUCCESS
+
+
+def _check(args: argparse.Namespace) -> int:
+    problems = check_manifest(args.manifest, args.tasks_dir)
+    for problem in problems:
+        print(f"MISMATCH {problem}")
+    if not problems:
+        print(f"task set matches {args.manifest}")
+    return EXIT_FAILURE if problems else EXIT_SUCCESS
