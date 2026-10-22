@@ -1,0 +1,11 @@
+--- a/src/stats.py
++++ b/src/stats.py
+@@ -2,4 +2,7 @@
+     """Average of every run of `window` consecutive values, in order."""
+     if window < 1:
+         raise ValueError("window must be >= 1")
+-    return [sum(values[i : i + window]) / window for i in range(len(values) - window)]
++    return [
++        sum(values[i : i + window]) / window
++        for i in range(len(values) - window + 1)
++    ]

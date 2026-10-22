@@ -38,7 +38,7 @@ helper too) → read the tests → write the fix → `run_tests` once → `finis
 agent never ran the tests before fixing. The single test run confirmed a fix
 that already passed, so test feedback never changed a decision.
 
-**Gaming check (manual review of all 15 diffs):** every fix is a genuine,
+**Gaming check (all 15 diffs reviewed line by line):** every fix is a genuine,
 minimal repair of the actual bug, with no special-casing of test inputs. In
 `cart_rounding_004` all 3 fixes were made in the helper (`money.py`), where
 the bug is. 13 of 15 diffs are identical, or nearly so, to the reference
@@ -55,11 +55,23 @@ solutions.
   "`get()` counts as a use"). The model's visible text and reasoning
   summaries show it found the bug by comparing code with docstring, before
   reading the tests.
-- **Task authorship.** The tasks were written by Claude Code (the
-  development assistant, also a Claude model) and are textbook bug patterns.
-  This may make them unusually easy for a Claude model.
+- **Task familiarity.** The tasks are textbook bug patterns written for this
+  study. Patterns this common are probably familiar to an LLM from training
+  data, which may make them unusually easy.
 - **Small n, one model, one configuration.** The intervals are wide, and the
   absence of failures here says little about harder tasks.
+- **The interval is optimistic.** The Wilson interval (0.80–1.00) treats the
+  15 runs as independent trials. Repetitions of the same task share that
+  task's difficulty (they are clustered), so the effective sample size is
+  closer to 5 tasks than to 15 runs. *(Added 2026-10-22 after review.)*
+- **`used_test_feedback` means "`run_tests` was called".** It does not mean a
+  failing result changed the fix. Here every call happened after a correct
+  fix. Future studies should count tests run, failing results seen, and
+  edits made after a failure separately. *(Added 2026-10-22.)*
+- **Sandbox image.** All runs used image `sha256:5637afa0…`, which is no
+  longer present locally. A rebuild from the same pinned inputs gets a new
+  image ID with identical package versions; the runs rescore identically on
+  it (`oarp rescore`). *(Added 2026-10-22.)*
 - **Not exercised:** tool-error recovery, budget exhaustion, test-feedback
   dependence, gaming attempts, multi-attempt fixes.
 - Reasoning summaries are provider-generated summaries, used here only to
