@@ -1,0 +1,54 @@
+{
+  "study": "M2 pilot: feasibility of two dev tasks (not a comparison, not a benchmark)",
+  "started": "2026-10-22T18:17:02+00:00",
+  "harness": {
+    "max_steps": 12,
+    "max_tool_calls_per_step": 1,
+    "run_tests_enabled": true,
+    "loop": "plain"
+  },
+  "model_settings": {
+    "model": "claude-haiku-5-5",
+    "max_tokens": 4096,
+    "effort": "medium",
+    "thinking_display": "summarized",
+    "disable_parallel_tool_use": true,
+    "timeout_s": 60.0,
+    "max_retries": 2
+  },
+  "tasks": [
+    "feed_pagination_006",
+    "config_merge_007"
+  ],
+  "repetitions": 3,
+  "schedule": [
+    "feed_pagination_006",
+    "config_merge_007",
+    "feed_pagination_006",
+    "config_merge_007",
+    "feed_pagination_006",
+    "config_merge_007"
+  ],
+  "budget_usd": 0.4,
+  "worst_case_run_usd": 0.05,
+  "git": {
+    "commit": "df5e5037ca2d171dfbae013f9c94aa7cf4d2c358",
+    "dirty": false,
+    "untracked_files": 3
+  },
+  "script_sha256": {
+    "run_pilot.py": "26c163b04c19024253d2ec57fd7e0e04c83d5af35aec6fba095a47b748bae54b",
+    "analyze.py": "eee46e4972fa981d2d5dad066e62be75116a6318975cae0311f542c82f07eda7"
+  },
+  "runs": [
+    "20261022T181702-0c2d84",
+    "20261022T181722-78573b",
+    "20261022T181738-394681",
+    "20261022T181759-df24c7",
+    "20261022T181815-a448e8",
+    "20261022T181838-246da7"
+  ],
+  "estimated_spend_usd": 0.020781,
+  "task_manifest_unchanged_at_end": true,
+  "finished": "2026-10-22T18:18:52+00:00"
+}

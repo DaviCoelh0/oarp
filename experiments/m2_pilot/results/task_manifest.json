@@ -1,0 +1,15 @@
+{
+  "tasks": [
+    {
+      "id": "config_merge_007",
+      "split": "dev",
+      "hash": "9c9b2fd96c3649c570f3fdfd4449bcf19e382fde7677b082b7a773ccfe9bdf7f"
+    },
+    {
+      "id": "feed_pagination_006",
+      "split": "dev",
+      "hash": "4686a7ba660b5a20c0ce38723e9d9fa0f712e67505a68db5c1ee555cbbd34c83"
+    }
+  ],
+  "set_hash": "405335deec933edb88b9d276c9a4322f572dec57ed01f4030b7b5beb227e65a7"
+}

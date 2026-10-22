@@ -1,0 +1,55 @@
+{
+  "run_id": "20261022T181722-78573b",
+  "task_id": "config_merge_007",
+  "split": "dev",
+  "task_format": 2,
+  "task_hash": "9c9b2fd96c3649c570f3fdfd4449bcf19e382fde7677b082b7a773ccfe9bdf7f",
+  "heldout_opt_in": false,
+  "config": {
+    "harness": {
+      "max_steps": 12,
+      "max_tool_calls_per_step": 1,
+      "run_tests_enabled": true,
+      "loop": "plain"
+    },
+    "model": {
+      "model": "claude-haiku-5-5",
+      "max_tokens": 4096,
+      "effort": "medium",
+      "thinking_display": "summarized",
+      "disable_parallel_tool_use": true,
+      "timeout_s": 60.0,
+      "max_retries": 2
+    }
+  },
+  "config_hash": "e50fdc51d5c6f10cabd0723b999bd434c7caa3bfce5c12dda1f153cd2b51c8a3",
+  "valid": true,
+  "invalid_reason": null,
+  "stop_reason": "finished",
+  "verified_success": true,
+  "verification_status": "passed",
+  "test_counts": {
+    "passed": 4
+  },
+  "public_status": "passed",
+  "hidden_status": "passed",
+  "hidden_counts": {
+    "passed": 10
+  },
+  "model_calls": 10,
+  "tool_calls_attempted": 9,
+  "tool_calls_rejected": 0,
+  "errors_by_kind": {},
+  "run_tests_calls": 1,
+  "used_test_feedback": true,
+  "input_tokens": 19306,
+  "output_tokens": 1336,
+  "estimated_cost_usd": 0.002599,
+  "models_served": [
+    "claude-haiku-5-5"
+  ],
+  "final_answer": "Cause: `load_config` built its result with a shallow `dict(DEFAULTS)`, so `merge` wrote into the shared nested dicts and lists. `enable_debug` then mutated those shared lists/dicts, and every later config picked up the changes. `merge` also stored override values by reference, so returned configs could alias the caller's overrides.\n\nFix:\n- `merge.py`: `merge` now deep-copies its base and deep-copies override values, so it modifies neither argument and the result shares no mutable state with either.\n- `loader.py`: `load_config` passes `DEFAULTS` straight to `merge`, which copies it, so the defaults are never modified.\n\nAll 4 existing tests pass. I did not add new regression tests for the README guarantees (mutating a returned config, or mutating the overrides after the call), so those are verified only by reasoning, not by a test.",
+  "error": null,
+  "wall_time_s": 16.556,
+  "sandbox_image": "sha256:4c6052e23fa70db432b7eb6d5ee426f9fb0f31083eb0c57065a8d421b6b26438"
+}

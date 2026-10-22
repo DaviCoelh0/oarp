@@ -80,7 +80,8 @@ def test_rescore_reproduces_every_committed_run(run_dir: Path, capsys: pytest.Ca
 
 
 def test_committed_runs_were_found() -> None:
-    assert len(COMMITTED_RUNS) == 16  # 15 P4 runs + 1 CLI run
+    studies = [p.relative_to(EXPERIMENTS).parts[0] for p in COMMITTED_RUNS]
+    assert (studies.count("p4_feasibility"), studies.count("m1_cli_run")) == (15, 1)
 
 
 def test_heldout_task_needs_flag(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
