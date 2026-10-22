@@ -1,0 +1,8 @@
+id = "feed_pagination_006"
+split = "dev"
+format = 2
+source = ["https://github.com/tuist/tuist/issues/11045"]
+prompt = """A user reports that export_all sometimes returns fewer events than the store holds. Find and fix the cause. The intended behaviour is described in README.md."""
+editable = ["src/activity/cursor.py", "src/activity/export.py", "src/activity/store.py"]
+test_command = ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "-o", "pythonpath=src", "tests"]
+timeout_s = 30

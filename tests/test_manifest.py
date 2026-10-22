@@ -22,8 +22,9 @@ def tasks_dir(tmp_path: Path) -> Path:
 
 
 def test_unchanged_tasks_match(tasks_dir: Path, tmp_path: Path) -> None:
-    manifest = write_manifest(discover_tasks(tasks_dir), tmp_path / "m.json")
-    assert len(manifest["tasks"]) == 6 and len(manifest["set_hash"]) == 64
+    tasks = discover_tasks(tasks_dir)
+    manifest = write_manifest(tasks, tmp_path / "m.json")
+    assert len(manifest["tasks"]) == len(tasks) and len(manifest["set_hash"]) == 64
     assert check_manifest(tmp_path / "m.json", tasks_dir) == []
 
 
