@@ -6,14 +6,16 @@ an independent verifier, so "the agent did X" is a claim you can check.
 
 The first task environment is **sandboxed Python bug-fixing**: the agent reads
 files, writes fixes and runs tests inside a restricted Docker container, and a
-separate verifier decides whether the bug is fixed. Retrieval (RAG)
-environments are planned on the same core.
+separate verifier decides whether the bug is fixed. A second environment,
+**retrieval** over a scientific-abstract benchmark, is in its first stage: a
+model-free BM25 baseline with standard retrieval metrics.
 
 | Status | |
 |---|---|
-| **Implemented and tested** | provider-neutral agent loop, Anthropic adapter, coding environment, Docker sandbox, independent verifier, JSONL tracing, `oarp` CLI, optional LangGraph version of the loop, task format with hidden tests and wrong candidate fixes, frozen task-set manifests (300 tests) |
-| **Measured with a real model** | a tool-calling pilot and a 15-run coding feasibility study on Claude Haiku 5.5, both small and preliminary ([results](#results-so-far)) |
-| **Not yet done** | controlled harness comparisons, held-out evaluation, automatic harness optimization, RAG |
+| **Implemented and tested** | provider-neutral agent loop, Anthropic adapter, coding environment, Docker sandbox, independent verifier, JSONL tracing, `oarp` CLI, optional LangGraph version of the loop, task format with hidden tests and wrong candidate fixes, frozen task-set manifests; retrieval data loader, BM25 search and retrieval metrics (370 tests) |
+| **Measured with a real model** | a tool-calling pilot and three small coding feasibility studies on Claude Haiku 5.5 (33 runs in total, all at a success ceiling) ([results](#results-so-far)) |
+| **Measured without a model** | a BM25 retrieval baseline on 809 development queries ([results](#results-so-far)) |
+| **Not yet done** | a retrieval agent, controlled harness comparisons, held-out evaluation, automatic harness optimization |
 
 ## How a run works
 
@@ -81,13 +83,15 @@ in a manifest; `oarp tasks check` fails if any task changed since.
 | `src/oarp/core/` | Shared and environment-independent: types, `ModelClient` protocol + scripted model, tool registry, loop (plain and optional LangGraph), tracing, pricing |
 | `src/oarp/providers/` | `AnthropicModel`: the only module that knows Anthropic's API format |
 | `src/oarp/envs/coding/` | Coding environment: task loader, workspace and allowlist, sandbox, tools, verifier, runner, task validity checks, task-set manifests |
+| `src/oarp/envs/retrieval/` | Retrieval environment (first stage): checksum-verified benchmark download and loader, deterministic BM25 search, retrieval metrics |
 | `src/oarp/cli.py` | `oarp run` / `oarp rescore` / `oarp tasks freeze\|check` |
-| `tasks/coding/dev/` | 5 development tasks, each with a reference solution the agent never sees |
+| `tasks/coding/dev/` | 7 development tasks, each with a reference solution the agent never sees (2 in format 2, with hidden tests and wrong candidate fixes) |
 | `docker/` | Sandbox image: base image pinned by digest, packages pinned by version and hash |
 | `experiments/` | Studies with their scripts, raw results and READMEs |
 
-A RAG environment would add `envs/rag/` with its own tools and verifier,
-without changing `core/`.
+The retrieval environment adds `envs/retrieval/` with its own data, tools and
+evaluation, without changing `core/`. Benchmark data is downloaded locally
+into a gitignored `data/` folder and is never committed.
 
 ## Quick start
 
@@ -125,6 +129,14 @@ venv/bin/oarp run --task tasks/coding/dev/off_by_one_001 --runs-dir runs
 venv/bin/oarp rescore runs/<run_id>               # re-verify the saved files, compare hashes
 venv/bin/oarp tasks freeze --split dev --output manifest.json   # hash every dev task
 venv/bin/oarp tasks check manifest.json           # fails if any task changed since
+```
+
+Retrieval baseline (free, no model calls; downloads about 2.8 MB once):
+
+```bash
+venv/bin/pip install -e ".[retrieval]"
+venv/bin/python -m oarp.envs.retrieval.data                     # download and verify the data
+venv/bin/python experiments/retrieval_baseline/run_baseline.py  # BM25 on the development queries
 ```
 
 `oarp run` exits with 0 (verified success), 1 (verified failure) or 3
@@ -167,6 +179,25 @@ to 15 runs.
 `oarp run` on `off_by_one_001` at commit `a38ce5e`: verified success in 5 model
 calls, $0.001, and `oarp rescore` reproduced it with matching file hashes.
 
+**Harder coding tasks** ([experiments/m2_pilot](experiments/m2_pilot/README.md),
+[experiments/m2_effort_pilot](experiments/m2_effort_pilot/README.md)). Two
+multi-file tasks with behaviour-only specifications, hidden tests and known
+wrong fixes, 3 runs each, then the same tasks at the model's `low` and `medium`
+effort settings (12 more runs). All 18 runs were verified successes, and in
+every run the first state the agent tested was already correct: test feedback
+never changed a decision, and no known wrong fix appeared. `low` effort used
+about one model call fewer and about 13% less estimated cost. This is the same
+ceiling as P4, so these tasks cannot show whether a harness change helps;
+this is why work moved to retrieval, where success is graded rather than
+pass/fail.
+
+**Retrieval baseline** ([experiments/retrieval_baseline](experiments/retrieval_baseline/README.md)).
+Plain BM25 on the 809 development queries of a scientific-claim retrieval
+benchmark (5,183 abstracts), no model calls: nDCG@10 0.667, Recall@10 0.787,
+Recall@100 0.906. The first relevant document is at rank 1 for 56% of queries,
+at ranks 2–100 for 35%, and not in the top 100 for 9%, so better ranking has
+more room to help than more searching. The held-out test queries were not used.
+
 ## Security model
 
 Model inference and the API key stay in the trusted host process. Only
@@ -201,10 +232,12 @@ temperature), so results are reported over repeated runs.
 
 ## What's next
 
-1. **Informative tasks:** less revealing specifications, multi-file bugs, and tasks where a plausible first fix fails, so test feedback can matter. A separate held-out set is never used for tuning. The task format and checks for this exist; the tasks themselves are not written yet.
-2. **One controlled comparison:** fixed model, settings, tasks and verifier, changing a single harness variable (e.g. `run_tests` available or not), with repeated runs and uncertainty reported. Better metrics too: tests *run* vs. failing results *seen* vs. an edit made *after* a failure.
-3. **Harness optimization:** a bounded search over harness configurations on dev tasks, validated on held-out tasks.
-4. **RAG environment:** retrieval tools and retrieval-specific evaluation on the same core.
+The coding environment stays as a working, tested demonstration; no new coding tasks are planned for now.
+
+1. **Choose the retrieval decision worth optimizing,** based on the baseline: better ranking of retrieved candidates, or further searching.
+2. **Compare strategies on development queries:** a fixed strategy, a simple rule-based adaptive one, and a model-controlled one, reporting retrieval quality next to calls, tokens, latency and cost.
+3. **Harness optimization:** a bounded, automatic search over retrieval and harness settings, validated on the held-out queries only at the end.
+4. Later: test whether the same approach transfers back to the coding environment.
 
 oarp does not yet demonstrate automatic self-improvement or general coding
 ability. Those are research directions, not results.

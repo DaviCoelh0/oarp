@@ -1,0 +1,58 @@
+{
+  "study": "R1: plain BM25 on SciFact train queries (model-free baseline)",
+  "finished": "2026-10-23T02:00:40+00:00",
+  "git": {
+    "commit": "6885ea777be598d596fae8def836e6b5a5ac46c9",
+    "dirty": true,
+    "untracked_files": 13
+  },
+  "python": "3.14.0",
+  "bm25_config": {
+    "k1": 1.5,
+    "b": 0.75,
+    "method": "lucene",
+    "lower": true,
+    "stopwords": "english",
+    "splitter": "(?u)\\b\\w\\w+\\b",
+    "stemmer": null
+  },
+  "bm25s": "0.3.13",
+  "numpy": "2.5.3",
+  "dataset": {
+    "url": "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/scifact.zip",
+    "bytes": 2816079,
+    "md5": "5f7d1de60b170fc8027bb7898e2efca1",
+    "sha256": "536e14446a0ba56ed1398ab1055f39fe852686ecad24a6306c80c490fa8e0165"
+  },
+  "split": "train",
+  "counts": {
+    "corpus_documents": 5183,
+    "queries_in_file": 1109,
+    "judged_queries_in_split": 809,
+    "evaluated_queries": 809,
+    "skipped": {},
+    "relevant_judgments": 919,
+    "zero_grade_judgments": 0,
+    "queries_with_several_relevant": 77,
+    "queries_with_no_indexed_token": 0
+  },
+  "metrics_mean": {
+    "ndcg@10": 0.6668251060662966,
+    "recall@10": 0.7868562010712815,
+    "recall@100": 0.9062216728471364,
+    "mrr@10": 0.6347160908038535
+  },
+  "first_relevant_rank_buckets": {
+    "rank 1": 452,
+    "ranks 2-10": 197,
+    "ranks 11-100": 89,
+    "beyond 100": 71
+  },
+  "queries_missing_some_relevant_in_top10": 26,
+  "share_no_relevant_in_top10": 0.19777503090234858,
+  "triage_guideline": "judgment call",
+  "timing_s": {
+    "index": 0.371,
+    "scoring_all_queries": 2.036
+  }
+}

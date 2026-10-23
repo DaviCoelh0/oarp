@@ -11,3 +11,5 @@ CLAUDE.md
 tasks/coding/test/
 # Hidden-test output of a run; never published.
 private/
+# Downloaded benchmark data (licensed separately); never committed.
+data/

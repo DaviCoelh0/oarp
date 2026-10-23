@@ -67,7 +67,8 @@ def test_rescore_detects_altered_saved_files(dry_run: Path, tmp_path: Path, caps
 
 
 EXPERIMENTS = TASKS_DIR.parent / "experiments"
-COMMITTED_RUNS = sorted(p.parent for p in EXPERIMENTS.glob("*/**/summary.json"))
+# Agent runs are the folders with a trace; other studies may also write a summary.json.
+COMMITTED_RUNS = sorted(p.parent for p in EXPERIMENTS.glob("*/**/trace.jsonl"))
 
 
 @pytest.mark.docker

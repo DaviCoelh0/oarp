@@ -17,6 +17,8 @@ oarp = "oarp.cli:main"
 anthropic = ["anthropic>=1.17,<2"]
 # Optional graph implementation of the agent loop (HarnessConfig.loop = "graph").
 langgraph = ["langgraph>=1.2.16,<1.3"]
+# Retrieval environment: BM25 via bm25s (exact pins for reproducible baselines).
+retrieval = ["bm25s==0.3.13", "numpy==2.5.3"]
 dev = ["pytest>=8", "anthropic>=1.17,<2"]
 
 [tool.pytest.ini_options]
