@@ -80,6 +80,10 @@ class RerankRecord:
     copied_presentation_order: bool  # the answer was exactly 1..k in presentation order
     matches_bm25_order: bool  # the final top k equals BM25's top k
     error: str | None = None
+    error_kind: str | None = None  # exception class name, e.g. ModelOutputTruncated, ModelRefused
+    text: str = ""  # the model's visible answer, for audit
+    reasoning_summary: str | None = None  # provider summary of hidden thinking (not evidence of why)
+    stop_reason: str | None = None  # the provider's own stop reason
 
 
 def truncate(text: str, max_chars: int) -> str:
@@ -133,7 +137,7 @@ def rerank(model: ModelClient, query_id: str, query: str, ranking: Sequence[str]
         response = model.complete(rerank_messages(query, [corpus[top[i]] for i in shown], config), [])
     except Exception as exc:  # the paid runner decides whether such a query is invalid
         return RerankRecord(list(ranking), "model_error", 0, 0, 0, None, None, time.perf_counter() - started,
-                            False, True, f"{type(exc).__name__}: {exc}")
+                            False, True, f"{type(exc).__name__}: {exc}", type(exc).__name__)
     latency = time.perf_counter() - started
     parsed = parse_ranking(response.text, len(top))
     named = parsed.order[: len(top) - parsed.missing]  # shown positions the model named, in its order
@@ -142,7 +146,9 @@ def rerank(model: ModelClient, query_id: str, query: str, ranking: Sequence[str]
     reranked = [top[i] for i in bm25_positions]
     copied = parsed.status == "valid" and parsed.order == list(range(len(top)))
     return RerankRecord(reranked + rest, parsed.status, parsed.duplicates, parsed.out_of_range, parsed.missing,
-                        response.usage, response.model, latency, copied, reranked == top)
+                        response.usage, response.model, latency, copied, reranked == top,
+                        text=response.text, reasoning_summary=response.reasoning_summary,
+                        stop_reason=response.stop_reason)
 
 
 def provenance(config: RerankConfig) -> dict:
