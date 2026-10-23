@@ -54,3 +54,27 @@ def headroom_bucket(rank: int | None) -> str:
     if rank is not None and rank <= 100:
         return HEADROOM_BUCKETS[2]
     return HEADROOM_BUCKETS[3]
+
+
+def auc(scores: list[float], positives: list[bool]) -> float:
+    """Area under the ROC curve: the probability that a random positive scores
+    higher than a random negative, ties counting one half (Mann-Whitney U with
+    average ranks)."""
+    if len(scores) != len(positives):
+        raise ValueError("scores and labels differ in length")
+    n_pos = sum(positives)
+    n_neg = len(positives) - n_pos
+    if not n_pos or not n_neg:
+        raise ValueError("AUC needs at least one positive and one negative")
+    order = sorted(range(len(scores)), key=scores.__getitem__)
+    ranks = [0.0] * len(scores)
+    i = 0
+    while i < len(order):
+        j = i
+        while j + 1 < len(order) and scores[order[j + 1]] == scores[order[i]]:
+            j += 1
+        for position in range(i, j + 1):
+            ranks[order[position]] = (i + j) / 2 + 1  # average 1-based rank of the tie group
+        i = j + 1
+    rank_sum = sum(r for r, positive in zip(ranks, positives) if positive)
+    return (rank_sum - n_pos * (n_pos + 1) / 2) / (n_pos * n_neg)

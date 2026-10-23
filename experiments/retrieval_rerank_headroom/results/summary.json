@@ -1,0 +1,331 @@
+{
+  "study": "R2a: free reranking-headroom analysis on SciFact train queries (no model calls)",
+  "finished": "2026-10-23T16:53:53+00:00",
+  "git": {
+    "commit": "3e0691251c8e4e4b8d30f7a7b94c2b74b7d1b83f",
+    "dirty": true,
+    "untracked_files": 7
+  },
+  "python": "3.14.0",
+  "bm25_config": {
+    "k1": 1.5,
+    "b": 0.75,
+    "method": "lucene",
+    "lower": true,
+    "stopwords": "english",
+    "splitter": "(?u)\\b\\w\\w+\\b",
+    "stemmer": null
+  },
+  "bm25s": "0.3.13",
+  "numpy": "2.5.3",
+  "rerank_config": {
+    "k": 20,
+    "max_doc_chars": 2000
+  },
+  "rerank_system": "You rank scientific abstracts by how relevant they are to a claim. An abstract is relevant if it contains evidence that supports or refutes the claim.",
+  "rerank_instruction": "Rank all {k} abstracts from most to least relevant to the claim. Reply with exactly one line: RANKING: followed by all abstract numbers, most relevant first, separated by commas.",
+  "gate_top": 3,
+  "gate_max_doc_chars": 2000,
+  "gate_system": "You judge whether a scientific abstract is relevant to a claim. An abstract is relevant if it contains evidence that supports or refutes the claim.",
+  "gate_instruction": "Is abstract [1] relevant to the claim? Abstracts [2] and [3] are shown for context only. Reply with exactly one line: ANSWER: yes or ANSWER: no.",
+  "split": "train",
+  "queries": {
+    "all": 809,
+    "tune": 405,
+    "check": 404
+  },
+  "dev_partition_seed": "oarp-r2-dev-partition-v1",
+  "rerank_k": 20,
+  "oracle_by_k": {
+    "10": {
+      "all": {
+        "ndcg@10": 0.7905256498420152,
+        "recall@10": 0.7868562010712815,
+        "mrr@10": 0.8022249690976514,
+        "first_relevant_in_top_k": 0.8022249690976514
+      },
+      "tune": {
+        "ndcg@10": 0.7878307930985118,
+        "recall@10": 0.7849382716049382,
+        "mrr@10": 0.7975308641975308,
+        "first_relevant_in_top_k": 0.7975308641975308
+      },
+      "check": {
+        "ndcg@10": 0.7932271770230025,
+        "recall@10": 0.7887788778877888,
+        "mrr@10": 0.806930693069307,
+        "first_relevant_in_top_k": 0.806930693069307
+      }
+    },
+    "20": {
+      "all": {
+        "ndcg@10": 0.8452199793915236,
+        "recall@10": 0.8423156159868149,
+        "mrr@10": 0.8541409147095179,
+        "first_relevant_in_top_k": 0.8541409147095179
+      },
+      "tune": {
+        "ndcg@10": 0.8399390502313748,
+        "recall@10": 0.8385185185185186,
+        "mrr@10": 0.8444444444444444,
+        "first_relevant_in_top_k": 0.8444444444444444
+      },
+      "check": {
+        "ndcg@10": 0.8505139801585043,
+        "recall@10": 0.846122112211221,
+        "mrr@10": 0.8638613861386139,
+        "first_relevant_in_top_k": 0.8638613861386139
+      }
+    },
+    "30": {
+      "all": {
+        "ndcg@10": 0.8634953835593778,
+        "recall@10": 0.8605480016481252,
+        "mrr@10": 0.8726823238566132,
+        "first_relevant_in_top_k": 0.8726823238566132
+      },
+      "tune": {
+        "ndcg@10": 0.859692136651128,
+        "recall@10": 0.8582716049382717,
+        "mrr@10": 0.8641975308641975,
+        "first_relevant_in_top_k": 0.8641975308641975
+      },
+      "check": {
+        "ndcg@10": 0.8673080444451234,
+        "recall@10": 0.8628300330033003,
+        "mrr@10": 0.8811881188118812,
+        "first_relevant_in_top_k": 0.8811881188118812
+      }
+    },
+    "50": {
+      "all": {
+        "ndcg@10": 0.8758630913242662,
+        "recall@10": 0.8736711990111248,
+        "mrr@10": 0.8825710754017305,
+        "first_relevant_in_top_k": 0.8825710754017305
+      },
+      "tune": {
+        "ndcg@10": 0.877336749860616,
+        "recall@10": 0.8760493827160494,
+        "mrr@10": 0.8814814814814815,
+        "first_relevant_in_top_k": 0.8814814814814815
+      },
+      "check": {
+        "ndcg@10": 0.8743857851182719,
+        "recall@10": 0.8712871287128713,
+        "mrr@10": 0.8836633663366337,
+        "first_relevant_in_top_k": 0.8836633663366337
+      }
+    },
+    "100": {
+      "all": {
+        "ndcg@10": 0.9077321279026958,
+        "recall@10": 0.9062216728471364,
+        "mrr@10": 0.9122373300370828,
+        "first_relevant_in_top_k": 0.9122373300370828
+      },
+      "tune": {
+        "ndcg@10": 0.9064076279210336,
+        "recall@10": 0.905679012345679,
+        "mrr@10": 0.908641975308642,
+        "first_relevant_in_top_k": 0.908641975308642
+      },
+      "check": {
+        "ndcg@10": 0.9090599063496592,
+        "recall@10": 0.9067656765676567,
+        "mrr@10": 0.9158415841584159,
+        "first_relevant_in_top_k": 0.9158415841584159
+      }
+    }
+  },
+  "oracle_gate": {
+    "all": {
+      "rerank_rate": 0.44128553770086526,
+      "S0": {
+        "ndcg@10": 0.6668251060662966,
+        "recall@10": 0.7868562010712815,
+        "mrr@10": 0.6347160908038535
+      },
+      "S1_oracle_reranker": {
+        "ndcg@10": 0.8452199793915236,
+        "recall@10": 0.8423156159868149,
+        "mrr@10": 0.8541409147095179
+      },
+      "oracle_gate_oracle_reranker": {
+        "ndcg@10": 0.8414073147693905,
+        "recall@10": 0.8395962093119077,
+        "mrr@10": 0.8541409147095179
+      }
+    },
+    "tune": {
+      "rerank_rate": 0.4345679012345679,
+      "S0": {
+        "ndcg@10": 0.6675910112207021,
+        "recall@10": 0.7849382716049382,
+        "mrr@10": 0.6365637860082305
+      },
+      "S1_oracle_reranker": {
+        "ndcg@10": 0.8399390502313748,
+        "recall@10": 0.8385185185185186,
+        "mrr@10": 0.8444444444444444
+      },
+      "oracle_gate_oracle_reranker": {
+        "ndcg@10": 0.8357343064976298,
+        "recall@10": 0.834320987654321,
+        "mrr@10": 0.8444444444444444
+      }
+    },
+    "check": {
+      "rerank_rate": 0.44801980198019803,
+      "S0": {
+        "ndcg@10": 0.6660573051070536,
+        "recall@10": 0.7887788778877888,
+        "mrr@10": 0.6328638220964954
+      },
+      "S1_oracle_reranker": {
+        "ndcg@10": 0.8505139801585043,
+        "recall@10": 0.846122112211221,
+        "mrr@10": 0.8638613861386139
+      },
+      "oracle_gate_oracle_reranker": {
+        "ndcg@10": 0.8470943651408338,
+        "recall@10": 0.8448844884488448,
+        "mrr@10": 0.8638613861386139
+      }
+    }
+  },
+  "rule_gate_relative_gap_oracle_reranker": [
+    {
+      "target_rate": 0.2,
+      "tau": 0.05117961632427985,
+      "check_rerank_rate": 0.19306930693069307,
+      "check_ndcg@10": 0.7288432504601235,
+      "matches_oracle_rate": false
+    },
+    {
+      "target_rate": 0.3,
+      "tau": 0.07756682501739841,
+      "check_rerank_rate": 0.26732673267326734,
+      "check_ndcg@10": 0.747369410515291,
+      "matches_oracle_rate": false
+    },
+    {
+      "target_rate": 0.4,
+      "tau": 0.11142485597164686,
+      "check_rerank_rate": 0.3415841584158416,
+      "check_ndcg@10": 0.7665190028709554,
+      "matches_oracle_rate": false
+    },
+    {
+      "target_rate": 0.5,
+      "tau": 0.17696091694653102,
+      "check_rerank_rate": 0.49504950495049505,
+      "check_ndcg@10": 0.8044796832533847,
+      "matches_oracle_rate": false
+    },
+    {
+      "target_rate": 0.6,
+      "tau": 0.2567730489555559,
+      "check_rerank_rate": 0.6287128712871287,
+      "check_ndcg@10": 0.8291225073552244,
+      "matches_oracle_rate": false
+    },
+    {
+      "target_rate": 0.8,
+      "tau": 0.4571132811616285,
+      "check_rerank_rate": 0.849009900990099,
+      "check_ndcg@10": 0.8486926437338053,
+      "matches_oracle_rate": false
+    },
+    {
+      "target_rate": 0.4346,
+      "tau": 0.1340956039832499,
+      "check_rerank_rate": 0.4084158415841584,
+      "check_ndcg@10": 0.7840806445904026,
+      "matches_oracle_rate": true
+    }
+  ],
+  "signal_auc_rank1_not_relevant": {
+    "relative_gap": {
+      "all": 0.8332682630574354,
+      "tune": 0.8455240174672489,
+      "check": 0.8187201149567673
+    },
+    "raw_gap": {
+      "all": 0.8468958379812102,
+      "tune": 0.8523471615720524,
+      "check": 0.8397542303594876
+    },
+    "top_score": {
+      "all": 0.7549546367219454,
+      "tune": 0.7505210400952759,
+      "check": 0.7605728018234522
+    }
+  },
+  "estimated_cost": {
+    "model": "claude-haiku-5-5",
+    "prices_as_of": "2026-10-19",
+    "chars_per_token": 4,
+    "output_token_assumptions": {
+      "rerank": {
+        "low": [
+          60,
+          560
+        ],
+        "medium": [
+          260,
+          2060
+        ]
+      },
+      "gate": {
+        "low": [
+          5,
+          205
+        ],
+        "medium": [
+          105,
+          1005
+        ]
+      }
+    },
+    "rerank": {
+      "mean_prompt_chars": 30249,
+      "est_input_tokens": 7562,
+      "per_query_usd": {
+        "low": [
+          0.0007862,
+          0.0010362000000000001
+        ],
+        "medium": [
+          0.0008862000000000001,
+          0.0017862
+        ]
+      }
+    },
+    "gate": {
+      "mean_prompt_chars": 4877,
+      "est_input_tokens": 1219,
+      "per_query_usd": {
+        "low": [
+          0.00012440000000000002,
+          0.0002244
+        ],
+        "medium": [
+          0.0001744,
+          0.0006244
+        ]
+      }
+    },
+    "gate_over_rerank": {
+      "low": [
+        0.1200540436209226,
+        0.2854235563469855
+      ],
+      "medium": [
+        0.09763744261560857,
+        0.7045813586097945
+      ]
+    },
+    "break_even_note": "a gate saves money iff gate cost / rerank cost < 1 - its rerank rate; the oracle gate's rate on all dev queries is 0.441"
+  }
+}

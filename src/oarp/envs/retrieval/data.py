@@ -152,5 +152,21 @@ def _read_qrels(path: Path) -> dict[str, dict[str, int]]:
     return qrels
 
 
+DEV_PARTITION_SEED = "oarp-r2-dev-partition-v1"
+
+
+def dev_partition(query_ids: list[str], seed: str = DEV_PARTITION_SEED) -> dict[str, list[str]]:
+    """Split development query ids into "tune" (choose settings) and "check"
+    (confirm a chosen setting once), half each (tune gets the extra one).
+
+    Order = SHA-256 of "<seed>:<query id>", so the split depends only on the
+    ids and the seed (not on Python's random module or the input order). Uses
+    no labels.
+    """
+    ordered = sorted(set(query_ids), key=lambda q: hashlib.sha256(f"{seed}:{q}".encode()).hexdigest())
+    cut = (len(ordered) + 1) // 2
+    return {"tune": sorted(ordered[:cut]), "check": sorted(ordered[cut:])}
+
+
 if __name__ == "__main__":
     print(json.dumps(fetch_scifact(Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_DATA_DIR), indent=2))

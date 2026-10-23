@@ -7,14 +7,15 @@ an independent verifier, so "the agent did X" is a claim you can check.
 The first task environment is **sandboxed Python bug-fixing**: the agent reads
 files, writes fixes and runs tests inside a restricted Docker container, and a
 separate verifier decides whether the bug is fixed. A second environment,
-**retrieval** over a scientific-abstract benchmark, is in its first stage: a
-model-free BM25 baseline with standard retrieval metrics.
+**retrieval** over a scientific-abstract benchmark, has a model-free BM25
+baseline, standard retrieval metrics, and the pieces for comparing reranking
+strategies (tested with a scripted model; no model has reranked yet).
 
 | Status | |
 |---|---|
-| **Implemented and tested** | provider-neutral agent loop, Anthropic adapter, coding environment, Docker sandbox, independent verifier, JSONL tracing, `oarp` CLI, optional LangGraph version of the loop, task format with hidden tests and wrong candidate fixes, frozen task-set manifests; retrieval data loader, BM25 search and retrieval metrics (370 tests) |
+| **Implemented and tested** | provider-neutral agent loop, Anthropic adapter, coding environment, Docker sandbox, independent verifier, JSONL tracing, `oarp` CLI, optional LangGraph version of the loop, task format with hidden tests and wrong candidate fixes, frozen task-set manifests; retrieval data loader, BM25 search, retrieval metrics, listwise reranking and relevance-gate pipelines with an offline strategy combiner (420 tests) |
 | **Measured with a real model** | a tool-calling pilot and three small coding feasibility studies on Claude Haiku 5.5 (33 runs in total, all at a success ceiling) ([results](#results-so-far)) |
-| **Measured without a model** | a BM25 retrieval baseline on 809 development queries ([results](#results-so-far)) |
+| **Measured without a model** | a BM25 retrieval baseline on 809 development queries, and the upper bounds of reranking and gating ([results](#results-so-far)) |
 | **Not yet done** | a retrieval agent, controlled harness comparisons, held-out evaluation, automatic harness optimization |
 
 ## How a run works
@@ -83,7 +84,7 @@ in a manifest; `oarp tasks check` fails if any task changed since.
 | `src/oarp/core/` | Shared and environment-independent: types, `ModelClient` protocol + scripted model, tool registry, loop (plain and optional LangGraph), tracing, pricing |
 | `src/oarp/providers/` | `AnthropicModel`: the only module that knows Anthropic's API format |
 | `src/oarp/envs/coding/` | Coding environment: task loader, workspace and allowlist, sandbox, tools, verifier, runner, task validity checks, task-set manifests |
-| `src/oarp/envs/retrieval/` | Retrieval environment (first stage): checksum-verified benchmark download and loader, deterministic BM25 search, retrieval metrics |
+| `src/oarp/envs/retrieval/` | Retrieval environment: checksum-verified benchmark download and loader, deterministic BM25 search, retrieval metrics, model reranker and relevance gate (`rerank.py`, `gate.py`), label-free strategy pieces (`strategies.py`), label-reading analysis helpers kept apart (`analysis.py`) |
 | `src/oarp/cli.py` | `oarp run` / `oarp rescore` / `oarp tasks freeze\|check` |
 | `tasks/coding/dev/` | 7 development tasks, each with a reference solution the agent never sees (2 in format 2, with hidden tests and wrong candidate fixes) |
 | `docker/` | Sandbox image: base image pinned by digest, packages pinned by version and hash |
@@ -137,6 +138,7 @@ Retrieval baseline (free, no model calls; downloads about 2.8 MB once):
 venv/bin/pip install -e ".[retrieval]"
 venv/bin/python -m oarp.envs.retrieval.data                     # download and verify the data
 venv/bin/python experiments/retrieval_baseline/run_baseline.py  # BM25 on the development queries
+venv/bin/python experiments/retrieval_rerank_headroom/run_analysis.py  # reranking and gating upper bounds
 ```
 
 `oarp run` exits with 0 (verified success), 1 (verified failure) or 3
@@ -198,6 +200,13 @@ Recall@100 0.906. The first relevant document is at rank 1 for 56% of queries,
 at ranks 2–100 for 35%, and not in the top 100 for 9%, so better ranking has
 more room to help than more searching. The held-out test queries were not used.
 
+**Reranking headroom** ([experiments/retrieval_rerank_headroom](experiments/retrieval_rerank_headroom/README.md)).
+Free upper bounds on the same queries. A perfect reranker of BM25's top 20
+would reach nDCG@10 0.845. A perfect gate that reranks only queries whose
+rank 1 is not relevant (44%) would reach 0.841. A rule gate on BM25's score gap
+reaches 0.784 at a similar rerank rate. These numbers use the labels; no
+model was called.
+
 ## Security model
 
 Model inference and the API key stay in the trusted host process. Only
@@ -234,8 +243,8 @@ temperature), so results are reported over repeated runs.
 
 The coding environment stays as a working, tested demonstration; no new coding tasks are planned for now.
 
-1. **Choose the retrieval decision worth optimizing,** based on the baseline: better ranking of retrieved candidates, or further searching.
-2. **Compare strategies on development queries:** a fixed strategy, a simple rule-based adaptive one, and a model-controlled one, reporting retrieval quality next to calls, tokens, latency and cost.
+1. **Measure a model reranker** on development queries: always rerank the top 20 (fixed), rerank only when BM25's score gap is small (rule-based gate), or rerank only when a model judges rank 1 not relevant (model gate). Report retrieval quality next to calls, tokens, latency and cost.
+2. **A model-controlled strategy:** an agent that decides whether to search again, reformulate or reorder.
 3. **Harness optimization:** a bounded, automatic search over retrieval and harness settings, validated on the held-out queries only at the end.
 4. Later: test whether the same approach transfers back to the coding environment.
 
