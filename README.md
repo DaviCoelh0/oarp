@@ -9,12 +9,12 @@ files, writes fixes and runs tests inside a restricted Docker container, and a
 separate verifier decides whether the bug is fixed. A second environment,
 **retrieval** over a scientific-abstract benchmark, has a model-free BM25
 baseline, standard retrieval metrics, and the pieces for comparing reranking
-strategies (tested with a scripted model; no model has reranked yet).
+strategies; a first paid pilot of model reranking has been run.
 
 | Status | |
 |---|---|
 | **Implemented and tested** | provider-neutral agent loop, Anthropic adapter, coding environment, Docker sandbox, independent verifier, JSONL tracing, `oarp` CLI, optional LangGraph version of the loop, task format with hidden tests and wrong candidate fixes, frozen task-set manifests; retrieval data loader, BM25 search, retrieval metrics, listwise reranking and relevance-gate pipelines with an offline strategy combiner (439 tests) |
-| **Measured with a real model** | a tool-calling pilot and three small coding feasibility studies on Claude Haiku 5.5 (33 runs in total, all at a success ceiling) ([results](#results-so-far)) |
+| **Measured with a real model** | a tool-calling pilot and three small coding feasibility studies on Claude Haiku 5.5 (33 runs in total, all at a success ceiling); a reranking pilot on 100 retrieval development queries (280 calls) ([results](#results-so-far)) |
 | **Measured without a model** | a BM25 retrieval baseline on 809 development queries, and the upper bounds of reranking and gating ([results](#results-so-far)) |
 | **Not yet done** | a retrieval agent, controlled harness comparisons, held-out evaluation, automatic harness optimization |
 
@@ -207,6 +207,15 @@ rank 1 is not relevant (44%) would reach 0.841. A rule gate on BM25's score gap
 reaches 0.784 at a similar rerank rate. These numbers use the labels; no
 model was called.
 
+**Reranking pilot** ([experiments/retrieval_s1_pilot](experiments/retrieval_s1_pilot/README.md)).
+Claude Haiku 5.5 reranked BM25's top 20 in one call per query, on 100
+development queries. nDCG@10 rose from 0.698 to 0.754 (+0.056, 95% CI
++0.021 to +0.095) at about $0.0013 and 4–5 s per query, about 40% of what a
+perfect reranker of the same candidates could gain. Showing the candidates
+shuffled instead of in BM25 order made no clear difference (−0.004, CI −0.013
+to +0.002). 2.5% of calls were declined by the provider's safety filter on
+biomedical claims. A pilot on development queries, not a held-out result.
+
 ## Security model
 
 Model inference and the API key stay in the trusted host process. Only
@@ -243,7 +252,7 @@ temperature), so results are reported over repeated runs.
 
 The coding environment stays as a working, tested demonstration; no new coding tasks are planned for now.
 
-1. **Measure a model reranker** on development queries: always rerank the top 20 (fixed), rerank only when BM25's score gap is small (rule-based gate), or rerank only when a model judges rank 1 not relevant (model gate). Report retrieval quality next to calls, tokens, latency and cost.
+1. **Cheaper reranking:** rerank only when BM25's score gap is small (rule-based gate), or only when a model judges rank 1 not relevant (model gate), against always reranking. Report retrieval quality next to calls, tokens, latency and cost.
 2. **A model-controlled strategy:** an agent that decides whether to search again, reformulate or reorder.
 3. **Harness optimization:** a bounded, automatic search over retrieval and harness settings, validated on the held-out queries only at the end.
 4. Later: test whether the same approach transfers back to the coding environment.
