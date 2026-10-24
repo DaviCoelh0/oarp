@@ -151,6 +151,12 @@ def rerank(model: ModelClient, query_id: str, query: str, ranking: Sequence[str]
                         stop_reason=response.stop_reason)
 
 
+def prompt_sha256() -> dict[str, str]:
+    """SHA-256 of the two prompt parts, as recorded in study manifests."""
+    return {"rerank_system": hashlib.sha256(RERANK_SYSTEM.encode()).hexdigest(),
+            "rerank_instruction": hashlib.sha256(RERANK_INSTRUCTION.encode()).hexdigest()}
+
+
 def provenance(config: RerankConfig) -> dict:
     return {"rerank_config": asdict(config), "rerank_shuffle_seed": SHUFFLE_SEED if config.shuffle else None,
             "rerank_system": RERANK_SYSTEM, "rerank_instruction": RERANK_INSTRUCTION}

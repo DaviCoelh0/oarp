@@ -54,3 +54,26 @@ def choose_tau(gaps: Mapping[str, float], without: Mapping[str, float], with_: M
     the smaller tau (fewer reranks). Candidates: -inf, every gap, +inf."""
     candidates = [-math.inf, *sorted(set(gaps.values())), math.inf]
     return max(candidates, key=lambda t: (mixed_mean({q: g < t for q, g in gaps.items()}, without, with_), -t))
+
+
+def fewest_reranks_within(gaps: Mapping[str, float], without: Mapping[str, float], with_: Mapping[str, float],
+                          tolerance: float = 0.01) -> dict:
+    """The S2 threshold with the FEWEST reranks whose mean metric is within
+    `tolerance` of reranking every query: mean(S2(tau)) - mean(S1) >= -tolerance.
+
+    A query is reranked iff its gap < tau. Candidates: -inf, every gap, +inf
+    (+inf equals S1, so it always qualifies). Ties in rerank rate go to the
+    smaller tau. Example: gaps a 0.1, b 0.5, c 0.9; S0 (without) a 0, b 1, c 1;
+    S1 (with_) a 1, b 1, c 0.9. S1's mean is 0.967; tau = 0.5 reranks only a
+    (mean 1.0, rate 1/3) and qualifies at tolerance 0, as does tau = 0.9 at
+    rate 2/3: the rule picks 0.5.
+    """
+    s1_mean = statistics.fmean(with_[q] for q in gaps)
+    curve = []
+    for tau in [-math.inf, *sorted(set(gaps.values())), math.inf]:
+        flags = {q: g < tau for q, g in gaps.items()}
+        curve.append({"tau": tau, "rate": statistics.fmean(flags.values()),
+                      "minus_s1": mixed_mean(flags, without, with_) - s1_mean})
+    qualifying = [c for c in curve if c["minus_s1"] >= -tolerance - 1e-12]
+    best = min(qualifying, key=lambda c: (c["rate"], c["tau"]))
+    return {**best, "tolerance": tolerance, "curve": curve}
