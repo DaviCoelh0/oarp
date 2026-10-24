@@ -9,12 +9,13 @@ files, writes fixes and runs tests inside a restricted Docker container, and a
 separate verifier decides whether the bug is fixed. A second environment,
 **retrieval** over a scientific-abstract benchmark, has a model-free BM25
 baseline, standard retrieval metrics, and the pieces for comparing reranking
-strategies; a first paid pilot of model reranking has been run.
+strategies; model reranking has been piloted and confirmed on development
+queries, and a model-based rerank gate has been piloted.
 
 | Status | |
 |---|---|
 | **Implemented and tested** | provider-neutral agent loop, Anthropic adapter, coding environment, Docker sandbox, independent verifier, JSONL tracing, `oarp` CLI, optional LangGraph version of the loop, task format with hidden tests and wrong candidate fixes, frozen task-set manifests; retrieval data loader, BM25 search, retrieval metrics, listwise reranking and relevance-gate pipelines with an offline strategy combiner (467 tests) |
-| **Measured with a real model** | a tool-calling pilot and three small coding feasibility studies on Claude Haiku 5.5 (33 runs in total, all at a success ceiling); a reranking pilot on 100 retrieval development queries (280 calls) ([results](#results-so-far)) |
+| **Measured with a real model** | a tool-calling pilot and three small coding feasibility studies on Claude Haiku 5.5 (33 runs in total, all at a success ceiling); reranking and gating studies on retrieval development queries (1,324 calls) ([results](#results-so-far)) |
 | **Measured without a model** | a BM25 retrieval baseline on 809 development queries, and the upper bounds of reranking and gating ([results](#results-so-far)) |
 | **Not yet done** | a retrieval agent, controlled harness comparisons, held-out evaluation, automatic harness optimization |
 
@@ -216,6 +217,21 @@ shuffled instead of in BM25 order made no clear difference (−0.004, CI −0.01
 to +0.002). 2.5% of calls were declined by the provider's safety filter on
 biomedical claims. A pilot on development queries, not a held-out result.
 
+**Reranking confirmation** ([experiments/retrieval_s1_check](experiments/retrieval_s1_check/README.md)).
+The same reranker, unchanged, on 404 other development queries that no
+setting had been chosen on: nDCG@10 rose from 0.666 to 0.786 (+0.120, 95% CI
++0.096 to +0.144), 65% of what a perfect reranker of the same candidates
+could gain. Almost all of the gain comes from queries whose first relevant
+document BM25 placed at ranks 2–20. Development data, not a held-out result.
+
+**Rerank gate** ([experiments/retrieval_s2b_pilot](experiments/retrieval_s2b_pilot/README.md)).
+A cheap model call deciding whether to rerank (is BM25's first result
+relevant?) halved the cost of always reranking but lost part of the gain. It
+was not reliably better than a free rule on BM25's score gap at the same
+rerank rate, which was cheaper and kept more of the gain. A perfect gate
+would beat always reranking at 38% of the calls. A pilot on 100 development
+queries.
+
 ## Security model
 
 Model inference and the API key stay in the trusted host process. Only
@@ -252,7 +268,7 @@ temperature), so results are reported over repeated runs.
 
 The coding environment stays as a working, tested demonstration; no new coding tasks are planned for now.
 
-1. **Cheaper reranking:** rerank only when BM25's score gap is small (rule-based gate), or only when a model judges rank 1 not relevant (model gate), against always reranking. Report retrieval quality next to calls, tokens, latency and cost.
+1. **Cheaper reranking:** the free score-gap gate, chosen on development queries and confirmed on queries it was not chosen on, against always reranking.
 2. **A model-controlled strategy:** an agent that decides whether to search again, reformulate or reorder.
 3. **Harness optimization:** a bounded, automatic search over retrieval and harness settings, validated on the held-out queries only at the end.
 4. Later: test whether the same approach transfers back to the coding environment.

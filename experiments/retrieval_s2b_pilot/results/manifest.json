@@ -1,0 +1,79 @@
+{
+  "study": "S2b gate pilot: model gate at effort medium (primary) and low, on the S1 pilot's queries",
+  "mode": "paid",
+  "started": "2026-10-24T11:58:23+00:00",
+  "model": "claude-haiku-5-5",
+  "model_settings": {
+    "medium": {
+      "model": "claude-haiku-5-5",
+      "max_tokens": 4096,
+      "effort": "medium",
+      "thinking_display": "summarized",
+      "disable_parallel_tool_use": true,
+      "timeout_s": 60.0,
+      "max_retries": 2
+    },
+    "low": {
+      "model": "claude-haiku-5-5",
+      "max_tokens": 4096,
+      "effort": "low",
+      "thinking_display": "summarized",
+      "disable_parallel_tool_use": true,
+      "timeout_s": 60.0,
+      "max_retries": 2
+    }
+  },
+  "efforts": [
+    "medium",
+    "low"
+  ],
+  "prices_as_of": "2026-10-19",
+  "gate": {
+    "gate_top": 3,
+    "gate_max_doc_chars": 2000,
+    "gate_system": "You judge whether a scientific abstract is relevant to a claim. An abstract is relevant if it contains evidence that supports or refutes the claim.",
+    "gate_instruction": "Is abstract [1] relevant to the claim? Abstracts [2] and [3] are shown for context only. Reply with exactly one line: ANSWER: yes or ANSWER: no."
+  },
+  "prompt_sha256": {
+    "gate_system": "0326971d5d5f62798d76b549828c7be8708211178b2f5482d8bbc0c6650b80a4",
+    "gate_instruction": "d03229aa550c4f5d45fa7bfc87c468240dd60630c7b7623f72277828d87aa7b1"
+  },
+  "s1_pilot": {
+    "commit": "08f31b482af0d2cfb10c30f96fc8eabd7fe3d1b7",
+    "sha256": {
+      "manifest.json": "a8013b6d368c50ad98a96b2ba22d792431e1dc3ec19e78658329e23e7ec45cec",
+      "private/sample.json": "771a2020c58ef37aa59b258ca351eb7c7a0f382b71676c8be86f8e9a12b48021",
+      "private/calls.jsonl": "4a143981f208ea8fefc5fa31ad53d6fa370f16c468518b7c63bdca1714acc50e"
+    }
+  },
+  "versions": {
+    "anthropic": "1.17.0",
+    "bm25s": "0.3.13",
+    "numpy": "2.5.3"
+  },
+  "python": "3.14.0",
+  "dataset_sha256": "536e14446a0ba56ed1398ab1055f39fe852686ecad24a6306c80c490fa8e0165",
+  "split": "train (tune half, S1 pilot sample)",
+  "order_seed": "oarp-r2-s2b-pilot-v1-order:",
+  "queries": 100,
+  "passes": 3,
+  "queries_sha256": "7e7184b8b7d2e9e632cc8052ba3fc12c7197ac8d561f2f98ed96521eae2c732b",
+  "scheduled_calls": 600,
+  "budget_usd": 0.5,
+  "worst_case_call_usd": 0.0025,
+  "git": {
+    "commit": "d6c4547fb515f172faf7290e08b1f18d7ab5a650",
+    "dirty": false,
+    "untracked_files": 1
+  },
+  "script_sha256": {
+    "run_gate.py": "3f7a94befe036bfd9b71be526150da7a1ed5cdedfbf3479d8406688eef318c3b",
+    "analyze.py": "a5d198beaa4ad7df56193a9d5590a5cb31605782b0d0140412d6db2275e32db5"
+  },
+  "completed_calls": 600,
+  "estimated_spend_usd": 0.155208,
+  "stopped_by_budget": false,
+  "stop_reason": null,
+  "calls_above_worst_case": 0,
+  "finished": "2026-10-24T12:16:13+00:00"
+}

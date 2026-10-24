@@ -1,0 +1,236 @@
+{
+  "study": "S2b gate pilot: model gate at effort medium (primary) and low, on the S1 pilot's queries",
+  "mode": "paid",
+  "git_at_run": {
+    "commit": "d6c4547fb515f172faf7290e08b1f18d7ab5a650",
+    "dirty": false,
+    "untracked_files": 1
+  },
+  "s1_pilot": {
+    "commit": "08f31b482af0d2cfb10c30f96fc8eabd7fe3d1b7",
+    "sha256": {
+      "manifest.json": "a8013b6d368c50ad98a96b2ba22d792431e1dc3ec19e78658329e23e7ec45cec",
+      "private/sample.json": "771a2020c58ef37aa59b258ca351eb7c7a0f382b71676c8be86f8e9a12b48021",
+      "private/calls.jsonl": "4a143981f208ea8fefc5fa31ad53d6fa370f16c468518b7c63bdca1714acc50e"
+    }
+  },
+  "model": "claude-haiku-5-5",
+  "calls": {
+    "scheduled": 600,
+    "completed": 600
+  },
+  "stopped_by_budget": false,
+  "estimated_spend_usd": 0.155208,
+  "queries": 100,
+  "oracle_rerank_rate": 0.38,
+  "primary_medium_minus_s2_correct": {
+    "mean": 0.06,
+    "low": -0.05,
+    "high": 0.18,
+    "n": 100,
+    "resamples": 10000,
+    "seed": 20261024,
+    "level": 0.95
+  },
+  "gates": {
+    "medium": {
+      "rerank_rate": 0.34,
+      "s2_tau": 0.09572321162919199,
+      "s2_rate": 0.34,
+      "correct_rate": 0.8,
+      "s2_correct_rate": 0.74,
+      "gate_minus_s2_correct": {
+        "mean": 0.06,
+        "low": -0.05,
+        "high": 0.18,
+        "n": 100,
+        "resamples": 10000,
+        "seed": 20261024,
+        "level": 0.95
+      },
+      "precision": 0.8181818181818182,
+      "recall": 0.8709677419354839,
+      "said_yes": 66,
+      "rank1_relevant": 62,
+      "queries": 100,
+      "status_counts": {
+        "no": 99,
+        "yes": 195,
+        "model_error": 6
+      },
+      "unparseable_rate_pass1": 0.0,
+      "declines": 6,
+      "other_error_rate": 0.0,
+      "flip_rate": 0.02,
+      "input_tokens_mean": 1748.8469387755101,
+      "output_tokens_mean": 138.7108843537415,
+      "gate_cost_per_call_usd": 0.00024424013605442175,
+      "gate_latency_median_s": 2.242480291519314
+    },
+    "low": {
+      "rerank_rate": 0.37,
+      "s2_tau": 0.10216161119320233,
+      "s2_rate": 0.37,
+      "correct_rate": 0.79,
+      "s2_correct_rate": 0.73,
+      "gate_minus_s2_correct": {
+        "mean": 0.06,
+        "low": -0.05,
+        "high": 0.18,
+        "n": 100,
+        "resamples": 10000,
+        "seed": 20261024,
+        "level": 0.95
+      },
+      "precision": 0.8253968253968254,
+      "recall": 0.8387096774193549,
+      "said_yes": 63,
+      "rank1_relevant": 62,
+      "queries": 100,
+      "status_counts": {
+        "no": 108,
+        "yes": 189,
+        "model_error": 3
+      },
+      "unparseable_rate_pass1": 0.0,
+      "declines": 3,
+      "other_error_rate": 0.0,
+      "flip_rate": 0.04,
+      "input_tokens_mean": 1749.2626262626263,
+      "output_tokens_mean": 60.255892255892256,
+      "gate_cost_per_call_usd": 0.00020505420875420878,
+      "gate_latency_median_s": 0.9683105836156756
+    }
+  },
+  "low_minus_medium_correct": {
+    "mean": -0.01,
+    "low": -0.05,
+    "high": 0.02,
+    "n": 100,
+    "resamples": 10000,
+    "seed": 20261024,
+    "level": 0.95
+  },
+  "strategies": {
+    "S0": {
+      "rerank_rate": 0.0,
+      "ndcg@10": 0.6976222794901762,
+      "minus_s1": {
+        "mean": -0.05624804236222376,
+        "low": -0.09538586650472665,
+        "high": -0.02082649017688541,
+        "n": 100,
+        "resamples": 10000,
+        "seed": 20261024,
+        "level": 0.95
+      },
+      "share_of_s1_gain": 0.0,
+      "cost_per_query_usd": 0.0,
+      "latency_per_query_s": 0.0
+    },
+    "S1": {
+      "rerank_rate": 1.0,
+      "ndcg@10": 0.7538703218523999,
+      "minus_s1": {
+        "mean": 0.0,
+        "low": 0.0,
+        "high": 0.0,
+        "n": 100,
+        "resamples": 10000,
+        "seed": 20261024,
+        "level": 0.95
+      },
+      "share_of_s1_gain": 1.0,
+      "cost_per_query_usd": 0.0013002649484536084,
+      "latency_per_query_s": 4.369055220047012
+    },
+    "oracle_gate": {
+      "rerank_rate": 0.38,
+      "ndcg@10": 0.7612517267809707,
+      "minus_s1": {
+        "mean": 0.00738140492857085,
+        "low": 0.0,
+        "high": 0.018453512321427123,
+        "n": 100,
+        "resamples": 10000,
+        "seed": 20261024,
+        "level": 0.95
+      },
+      "share_of_s1_gain": 1.1312295436174724,
+      "cost_per_query_usd": 0.00048826564948453613,
+      "latency_per_query_s": 1.673848392071668
+    },
+    "S2b_medium": {
+      "rerank_rate": 0.34,
+      "ndcg@10": 0.7285997509937563,
+      "minus_s1": {
+        "mean": -0.025270570858643558,
+        "low": -0.049028329096834605,
+        "high": -0.006527715833912728,
+        "n": 100,
+        "resamples": 10000,
+        "seed": 20261024,
+        "level": 0.95
+      },
+      "share_of_s1_gain": 0.5507297712530639,
+      "cost_per_query_usd": 0.0006740532989690721,
+      "latency_per_query_s": 3.5663594312313944
+    },
+    "S2_matched_medium": {
+      "rerank_rate": 0.34,
+      "ndcg@10": 0.736357861452647,
+      "minus_s1": {
+        "mean": -0.017512460399752728,
+        "low": -0.04249055393047933,
+        "high": 0.0025128646386278894,
+        "n": 100,
+        "resamples": 10000,
+        "seed": 20261024,
+        "level": 0.95
+      },
+      "share_of_s1_gain": 0.6886565351558928,
+      "cost_per_query_usd": 0.0004345546494845361,
+      "latency_per_query_s": 1.4925604462460615
+    },
+    "S2b_low": {
+      "rerank_rate": 0.37,
+      "ndcg@10": 0.7285997509937563,
+      "minus_s1": {
+        "mean": -0.025270570858643558,
+        "low": -0.049028329096834605,
+        "high": -0.006527715833912728,
+        "n": 100,
+        "resamples": 10000,
+        "seed": 20261024,
+        "level": 0.95
+      },
+      "share_of_s1_gain": 0.5507297712530639,
+      "cost_per_query_usd": 0.0006744262989690722,
+      "latency_per_query_s": 2.9732960046269
+    },
+    "S2_matched_low": {
+      "rerank_rate": 0.37,
+      "ndcg@10": 0.7400485639169325,
+      "minus_s1": {
+        "mean": -0.013821757935467303,
+        "low": -0.036981252341430924,
+        "high": 0.0051788653539122705,
+        "n": 100,
+        "resamples": 10000,
+        "seed": 20261024,
+        "level": 0.95
+      },
+      "share_of_s1_gain": 0.7542713069646299,
+      "cost_per_query_usd": 0.0004698476494845361,
+      "latency_per_query_s": 1.5959585037548094
+    }
+  },
+  "rerank_cost_note": "S1 pilot rerank cost per query; declined pilot calls use the pilot mean $0.00130",
+  "outcome_rules": {
+    "run": "valid",
+    "format_problem": false,
+    "primary": "gate not better",
+    "no_saving": false,
+    "unstable": false
+  }
+}

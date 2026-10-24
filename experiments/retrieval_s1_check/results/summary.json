@@ -1,0 +1,173 @@
+{
+  "study": "S1 confirmation on the dev check half (S1-plain as in the pilot)",
+  "mode": "paid",
+  "git_at_run": {
+    "commit": "d6c4547fb515f172faf7290e08b1f18d7ab5a650",
+    "dirty": false,
+    "untracked_files": 0
+  },
+  "pilot_commit": "08f31b482af0d2cfb10c30f96fc8eabd7fe3d1b7",
+  "model": "claude-haiku-5-5",
+  "calls": {
+    "scheduled": 444,
+    "completed": 444
+  },
+  "stopped_by_budget": false,
+  "estimated_spend_usd": 0.608379,
+  "queries": 404,
+  "H1c_s1_minus_s0": {
+    "mean": 0.12004514723206453,
+    "low": 0.09604646217578916,
+    "high": 0.14422579688155002,
+    "n": 404,
+    "resamples": 10000,
+    "seed": 20261024,
+    "level": 0.95
+  },
+  "H1c_excluding_declined": {
+    "mean": 0.12247030172160119,
+    "low": 0.09833567844664651,
+    "high": 0.1477791763812904,
+    "n": 396,
+    "resamples": 10000,
+    "seed": 20261024,
+    "level": 0.95
+  },
+  "declined_queries": 8,
+  "means": {
+    "s0_ndcg@10": 0.6660573051070536,
+    "s1_ndcg@10": 0.7861024523391181,
+    "oracle20_ndcg@10": 0.8505139801585043,
+    "s1_recall@10": 0.8411716171617162,
+    "s0_recall@10": 0.7887788778877888,
+    "s1_mrr@10": 0.7782394310859658,
+    "s0_mrr@10": 0.6328638220964954
+  },
+  "share_of_ceiling": 0.650804028634801,
+  "improved_harmed_unchanged": [
+    113,
+    14,
+    277
+  ],
+  "harm_rate": 0.034653465346534656,
+  "harm_rate_rank1_relevant": 0.026905829596412557,
+  "by_bucket": {
+    "rank 1": {
+      "queries": 223,
+      "s0": 0.9895813559736364,
+      "s1": 0.9853515808175124
+    },
+    "ranks 2-10": {
+      "queries": 103,
+      "s0": 0.4700049405934831,
+      "s1": 0.7852939252955508
+    },
+    "ranks 11-20": {
+      "queries": 23,
+      "s0": 0.0,
+      "s1": 0.7376832137937724
+    },
+    "beyond 20": {
+      "queries": 55,
+      "s0": 0.0,
+      "s1": 0.0
+    }
+  },
+  "status_counts": {
+    "valid": 435,
+    "model_error": 9
+  },
+  "declines": 9,
+  "decline_rate": 0.02027027027027027,
+  "decline_categories": {
+    "bio": 9
+  },
+  "other_model_errors": 0,
+  "other_error_rate": 0.0,
+  "error_kinds": {
+    "ModelRefused": 9
+  },
+  "repairs": {
+    "duplicates": 0,
+    "out_of_range": 0,
+    "missing": 0
+  },
+  "truncations": 0,
+  "input_tokens": {
+    "mean": 10844.636781609195,
+    "p90": 12625
+  },
+  "output_tokens": {
+    "mean": 462.69885057471265,
+    "p90": 613
+  },
+  "estimated_usd": {
+    "total": 0.5723787,
+    "per_call_mean": 0.0013158131034482759
+  },
+  "latency_s": {
+    "median": 4.273652604431845,
+    "p90": 5.716912958072498
+  },
+  "stability": {
+    "queries": 20,
+    "mean_sd_ndcg@10": 0.003512835600102934,
+    "queries_with_varying_ndcg": 2,
+    "top1_agreement": 0.75,
+    "mean_kendall_tau_top20": 0.7607017543859649
+  },
+  "pilot_stability": {
+    "queries": 20,
+    "mean_sd_ndcg@10": 0.0,
+    "top1_agreement": 0.95,
+    "mean_kendall_tau_top20": 0.7803508771929825
+  },
+  "for_gate_studies": {
+    "oracle_gate_rate": 0.44801980198019803,
+    "oracle_gate_x_s1_ndcg@10": 0.7884372044673748,
+    "s2_x_s1_curve": [
+      {
+        "target_rate": 0.2,
+        "tau": 0.05444823410377594,
+        "rate": 0.2004950495049505,
+        "ndcg@10": 0.7106395487270715
+      },
+      {
+        "target_rate": 0.3,
+        "tau": 0.09294272831752023,
+        "rate": 0.2995049504950495,
+        "ndcg@10": 0.7369522298359874
+      },
+      {
+        "target_rate": 0.4,
+        "tau": 0.13063908566689825,
+        "rate": 0.39851485148514854,
+        "ndcg@10": 0.7452501088510515
+      },
+      {
+        "target_rate": 0.5,
+        "tau": 0.183997785523257,
+        "rate": 0.5,
+        "ndcg@10": 0.7599862369857308
+      },
+      {
+        "target_rate": 0.6,
+        "tau": 0.23798570807594738,
+        "rate": 0.599009900990099,
+        "ndcg@10": 0.7725050769080936
+      },
+      {
+        "target_rate": 0.8,
+        "tau": 0.421778574341763,
+        "rate": 0.7995049504950495,
+        "ndcg@10": 0.7850511215282121
+      }
+    ]
+  },
+  "outcome_rules": {
+    "run": "valid",
+    "H1c": "confirmed",
+    "decline_warning": false,
+    "cost_surprise": false
+  }
+}
