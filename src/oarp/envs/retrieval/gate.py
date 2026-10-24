@@ -43,6 +43,10 @@ class GateRecord:
     model: str | None
     latency_s: float
     error: str | None = None
+    error_kind: str | None = None  # exception class name, e.g. ModelRefused, ModelOutputTruncated
+    text: str = ""  # the model's visible answer, for audit
+    reasoning_summary: str | None = None  # provider summary of hidden thinking (not evidence of why)
+    stop_reason: str | None = None  # the provider's own stop reason
 
 
 def gate_messages(query: str, texts: Sequence[str]) -> list[Message]:
@@ -65,9 +69,11 @@ def gate(model: ModelClient, query: str, ranking: Sequence[str], corpus: dict[st
         response = model.complete(gate_messages(query, [corpus[d] for d in ranking[:GATE_TOP]]), [])
     except Exception as exc:
         return GateRecord(False, "model_error", None, None, time.perf_counter() - started,
-                          f"{type(exc).__name__}: {exc}")
+                          f"{type(exc).__name__}: {exc}", type(exc).__name__)
     status = parse_gate(response.text)
-    return GateRecord(status == "yes", status, response.usage, response.model, time.perf_counter() - started)
+    return GateRecord(status == "yes", status, response.usage, response.model, time.perf_counter() - started,
+                      text=response.text, reasoning_summary=response.reasoning_summary,
+                      stop_reason=response.stop_reason)
 
 
 def flip_rate(repeated: dict[str, Sequence[bool]]) -> float:
