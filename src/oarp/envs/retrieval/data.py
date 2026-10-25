@@ -115,6 +115,12 @@ def load_scifact(data_dir: Path = DEFAULT_DATA_DIR, split: str = "train", *,
     )
 
 
+def load_titles(data_dir: Path = DEFAULT_DATA_DIR) -> dict[str, str]:
+    """Doc id -> title alone (the corpus in `load_scifact` joins title and text)."""
+    return {doc_id: doc.get("title", "") for doc_id, doc in
+            _read_jsonl(data_dir / "scifact" / "corpus.jsonl", "corpus").items()}
+
+
 def _read_jsonl(path: Path, label: str) -> dict[str, dict]:
     if not path.is_file():
         raise DataError(f"missing {path}; download with: python -m oarp.envs.retrieval.data")

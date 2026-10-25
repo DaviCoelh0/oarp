@@ -6,6 +6,7 @@ tied at the top-k boundary are therefore chosen deterministically. With a few
 thousand documents this costs milliseconds per query.
 """
 
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from importlib import metadata
 
@@ -55,9 +56,25 @@ class BM25Index:
             return np.zeros(len(self.doc_ids), dtype=np.float32)
         return self._bm25.get_scores(tokens)
 
+    def weighted_scores(self, weights: Mapping[str, float]) -> np.ndarray:
+        """Sum of weight * BM25 score of each term (bm25s scores are additive over
+        query tokens, so weights of 1 per token occurrence equal `scores`). Terms
+        outside the vocabulary are ignored."""
+        total = np.zeros(len(self.doc_ids), dtype=np.float64)
+        for term, weight in weights.items():
+            if term in self._bm25.vocab_dict and term != "":
+                total += weight * self._bm25.get_scores([term])
+        return total
+
     def rank(self, text: str, k: int | None = None) -> list[tuple[str, float]]:
         """(doc id, score) pairs, best first, ties by doc id; the top k if given."""
-        scores = self.scores(text)
+        return self._ordered(self.scores(text), k)
+
+    def rank_weighted(self, weights: Mapping[str, float], k: int | None = None) -> list[tuple[str, float]]:
+        """As `rank`, for a weighted query (term -> weight)."""
+        return self._ordered(self.weighted_scores(weights), k)
+
+    def _ordered(self, scores: np.ndarray, k: int | None) -> list[tuple[str, float]]:
         order = np.lexsort((self._id_rank, -scores))  # last key is primary
         if k is not None:
             order = order[:k]

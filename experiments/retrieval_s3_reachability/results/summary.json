@@ -1,0 +1,96 @@
+{
+  "study": "S3a: free reachability analysis and RM3 baseline on SciFact tune queries (no model calls)",
+  "finished": "2026-10-25T16:06:16+00:00",
+  "git": {
+    "commit": "e6c24cbd16389fed450c422a841f00983e37a3c3",
+    "dirty": true,
+    "untracked_files": 6
+  },
+  "python": "3.14.0",
+  "bm25_config": {
+    "k1": 1.5,
+    "b": 0.75,
+    "method": "lucene",
+    "lower": true,
+    "stopwords": "english",
+    "splitter": "(?u)\\b\\w\\w+\\b",
+    "stemmer": null
+  },
+  "bm25s": "0.3.13",
+  "numpy": "2.5.3",
+  "rm3_config": {
+    "fb_docs": 10,
+    "fb_terms": 10,
+    "original_query_weight": 0.5
+  },
+  "split": "train",
+  "half": "tune",
+  "dev_partition_seed": "oarp-r2-dev-partition-v1",
+  "depth": 20,
+  "search_k": 10,
+  "queries": 405,
+  "strata": {
+    "within_depth": 342,
+    "beyond_depth": 63,
+    "buckets": {
+      "within": 342,
+      "beyond_to_100": 26,
+      "beyond_to_1000": 17,
+      "beyond_1000": 20
+    }
+  },
+  "title_reachability_beyond_depth": {
+    "own_within_10": 1.0,
+    "own_within_20": 1.0,
+    "any_relevant_within_10": 1.0,
+    "any_relevant_within_20": 1.0
+  },
+  "rm3_vs_bm25_all_tune": {
+    "ndcg@10": {
+      "bm25": 0.6675910112207021,
+      "rm3": 0.6239451555851022,
+      "rm3_minus_bm25": {
+        "mean": -0.04364585563559985,
+        "low": -0.06474413480941138,
+        "high": -0.023710288885426208,
+        "n": 405,
+        "resamples": 10000,
+        "seed": 0,
+        "level": 0.95
+      }
+    },
+    "recall@20": {
+      "bm25": 0.8385185185185186,
+      "rm3": 0.8385185185185186,
+      "rm3_minus_bm25": {
+        "mean": 0.0,
+        "low": -0.022222222222222223,
+        "high": 0.020987654320987655,
+        "n": 405,
+        "resamples": 10000,
+        "seed": 0,
+        "level": 0.95
+      }
+    },
+    "recall@100": {
+      "bm25": 0.905679012345679,
+      "rm3": 0.9271604938271605,
+      "rm3_minus_bm25": {
+        "mean": 0.02148148148148148,
+        "low": 0.0054320987654320994,
+        "high": 0.03827160493827161,
+        "n": 405,
+        "resamples": 10000,
+        "seed": 0,
+        "level": 0.95
+      }
+    }
+  },
+  "rm3_by_stratum": {
+    "beyond_rescued_within_search_k": 0.031746031746031744,
+    "beyond_rescued_within_depth": 0.15873015873015872,
+    "inside_lost_from_depth": 0.029239766081871343,
+    "inside_ndcg@10_rm3_minus_bm25": -0.053649835076934764,
+    "beyond_ndcg@10_rm3_minus_bm25": 0.01066146133164684
+  }
+}

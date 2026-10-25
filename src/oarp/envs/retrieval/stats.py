@@ -3,12 +3,15 @@
 - paired_bootstrap_ci: mean of per-query differences with a percentile
   bootstrap CI, resampling queries with replacement. Queries are the unit of
   resampling; repeated calls of one query are not independent samples.
+- stratified_bootstrap_ci: a weighted mean of per-stratum means (weights =
+  population shares) with a percentile CI, resampling queries with
+  replacement WITHIN each stratum (a stratified sample's bootstrap).
 - kendall_tau: Kendall's tau-a between two orderings of the same items
   (no ties possible: each is a ranking).
 - spearman: Spearman's rho between two sequences of distinct values.
 """
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from itertools import combinations
 
 import numpy as np
@@ -25,6 +28,28 @@ def paired_bootstrap_ci(differences: Sequence[float], *, resamples: int = 10_000
     return {"mean": float(values.mean()), "low": float(np.quantile(means, alpha)),
             "high": float(np.quantile(means, 1 - alpha)), "n": len(values), "resamples": resamples,
             "seed": seed, "level": level}
+
+
+def stratified_bootstrap_ci(strata: Mapping[str, Sequence[float]], weights: Mapping[str, float], *,
+                            resamples: int = 10_000, seed: int = 0, level: float = 0.95) -> dict:
+    """Estimate sum_s w_s * mean(strata[s]) with weights normalised to sum 1.
+    With one stratum this equals `paired_bootstrap_ci` (same draws, same seed)."""
+    if set(strata) != set(weights) or not strata or any(len(v) == 0 for v in strata.values()):
+        raise ValueError("every stratum needs a weight and at least one value")
+    total = sum(weights.values())
+    rng = np.random.default_rng(seed)
+    estimate = 0.0
+    means = np.zeros(resamples)
+    for name in sorted(strata):
+        values = np.asarray(strata[name], dtype=float)
+        w = weights[name] / total
+        estimate += w * float(values.mean())
+        means += w * values[rng.integers(0, len(values), size=(resamples, len(values)))].mean(axis=1)
+    alpha = (1 - level) / 2
+    return {"mean": estimate, "low": float(np.quantile(means, alpha)), "high": float(np.quantile(means, 1 - alpha)),
+            "n": {name: len(v) for name, v in sorted(strata.items())},
+            "weights": {name: weights[name] / total for name in sorted(strata)},
+            "resamples": resamples, "seed": seed, "level": level}
 
 
 def kendall_tau(first: Sequence[str], second: Sequence[str]) -> float:
