@@ -1,0 +1,306 @@
+{
+  "study": "S2 threshold study: S1-plain on the tune queries outside the S1 pilot sample",
+  "mode": "paid",
+  "git_at_run": {
+    "commit": "f216160042e7d5d298fd273af05278914183646d",
+    "dirty": false,
+    "untracked_files": 0
+  },
+  "calls": {
+    "scheduled": 305,
+    "completed": 305
+  },
+  "stopped_by_budget": false,
+  "estimated_spend_usd": 0.412369,
+  "reused_sha256": {
+    "pilot": {
+      "manifest.json": "a8013b6d368c50ad98a96b2ba22d792431e1dc3ec19e78658329e23e7ec45cec",
+      "private/sample.json": "771a2020c58ef37aa59b258ca351eb7c7a0f382b71676c8be86f8e9a12b48021",
+      "private/calls.jsonl": "4a143981f208ea8fefc5fa31ad53d6fa370f16c468518b7c63bdca1714acc50e"
+    },
+    "check": {
+      "manifest.json": "d0905eb86fbf3d973aa3bab69df0a3531327aa97f763ce01c9400539637c0220",
+      "private/sample.json": "e13ab3132ea07c933c62fdfc0ea718aa7fb26bcb369d8673b260f43501fe6238",
+      "private/calls.jsonl": "f0ff07cba7194c208848fbd6036772f13f41ded5da342fcfb068378cf064cb19"
+    }
+  },
+  "blindness": "NOT BLIND: the check-half S2 curve was computed and seen before this study's contract",
+  "tune": {
+    "queries": 405,
+    "from_pilot": 100,
+    "from_this_study": 305,
+    "tolerance": 0.01,
+    "tau_star": 0.1801413529043867,
+    "rerank_rate": 0.508641975308642,
+    "s0": 0.6675910112207021,
+    "s1": 0.7539097604824891,
+    "s2": 0.7459575297991369,
+    "s2_minus_s1": {
+      "mean": -0.007952230683352232,
+      "low": -0.014845963174808782,
+      "high": -0.001819501559492457,
+      "n": 405,
+      "resamples": 10000,
+      "seed": 20261024,
+      "level": 0.95
+    },
+    "curve_every_5_percent": [
+      {
+        "tau": -Infinity,
+        "rate": 0.0,
+        "minus_s1": -0.08631874926178706
+      },
+      {
+        "tau": 0.0,
+        "rate": 0.0,
+        "minus_s1": -0.08631874926178706
+      },
+      {
+        "tau": 0.009664827628031163,
+        "rate": 0.04938271604938271,
+        "minus_s1": -0.07379736962030903
+      },
+      {
+        "tau": 0.04054524894430257,
+        "rate": 0.1506172839506173,
+        "minus_s1": -0.058414545523116534
+      },
+      {
+        "tau": 0.05117961632427985,
+        "rate": 0.2,
+        "minus_s1": -0.049074841255074886
+      },
+      {
+        "tau": 0.0655045900834501,
+        "rate": 0.24938271604938272,
+        "minus_s1": -0.0403502900231667
+      },
+      {
+        "tau": 0.07756682501739841,
+        "rate": 0.29876543209876544,
+        "minus_s1": -0.039380681579199606
+      },
+      {
+        "tau": 0.09380696207450308,
+        "rate": 0.3506172839506173,
+        "minus_s1": -0.03141340717103114
+      },
+      {
+        "tau": 0.11142485597164686,
+        "rate": 0.4,
+        "minus_s1": -0.02418599493886542
+      },
+      {
+        "tau": 0.14136509728256702,
+        "rate": 0.44938271604938274,
+        "minus_s1": -0.015859516754992753
+      },
+      {
+        "tau": 0.17696091694653102,
+        "rate": 0.49876543209876545,
+        "minus_s1": -0.013669427909983711
+      },
+      {
+        "tau": 0.17751238410156386,
+        "rate": 0.5012345679012346,
+        "minus_s1": -0.012111576666597346
+      },
+      {
+        "tau": 0.20700202812123458,
+        "rate": 0.5506172839506173,
+        "minus_s1": -0.005066091870850387
+      },
+      {
+        "tau": 0.2567730489555559,
+        "rate": 0.6,
+        "minus_s1": -0.0019882941624218553
+      },
+      {
+        "tau": 0.31075127580365336,
+        "rate": 0.6493827160493827,
+        "minus_s1": -0.0025445347390553597
+      },
+      {
+        "tau": 0.35567644660991626,
+        "rate": 0.6987654320987654,
+        "minus_s1": -0.0028290080261853534
+      },
+      {
+        "tau": 0.4050678468578745,
+        "rate": 0.7506172839506173,
+        "minus_s1": -0.0017755454645334012
+      },
+      {
+        "tau": 0.4571132811616285,
+        "rate": 0.8,
+        "minus_s1": 0.0
+      },
+      {
+        "tau": 0.48735522374363377,
+        "rate": 0.8493827160493828,
+        "minus_s1": 0.0
+      },
+      {
+        "tau": 0.5594565973117589,
+        "rate": 0.8987654320987655,
+        "minus_s1": 0.0
+      },
+      {
+        "tau": 0.5633034961860479,
+        "rate": 0.9012345679012346,
+        "minus_s1": 0.0
+      },
+      {
+        "tau": 0.6236365954935679,
+        "rate": 0.9506172839506173,
+        "minus_s1": 0.0
+      },
+      {
+        "tau": Infinity,
+        "rate": 1.0,
+        "minus_s1": 0.0
+      }
+    ]
+  },
+  "check_confirmation": {
+    "margin": -0.02,
+    "queries": 404,
+    "tau": 0.1801413529043867,
+    "rerank_rate": 0.49504950495049505,
+    "calls_saved": 0.504950495049505,
+    "s0": 0.6660573051070536,
+    "s1": 0.7861024523391181,
+    "s2": 0.7599862369857308,
+    "s2_minus_s1": {
+      "mean": -0.026116215353387377,
+      "low": -0.03893761369035307,
+      "high": -0.014576256181487881,
+      "n": 404,
+      "resamples": 10000,
+      "seed": 20261024,
+      "level": 0.95
+    },
+    "s2_minus_s0": {
+      "mean": 0.09392893187867715,
+      "low": 0.07236924017872706,
+      "high": 0.11591163775783232,
+      "n": 404,
+      "resamples": 10000,
+      "seed": 20261024,
+      "level": 0.95
+    },
+    "share_of_s1_gain_kept": 0.7824467214580446,
+    "cost_per_query_usd": 0.0006560361236123613,
+    "s1_cost_per_query_usd": 0.001314231313131313,
+    "latency_per_query_s": 2.218874408224353,
+    "s1_latency_per_query_s": 4.18939625031354,
+    "oracle_gate": {
+      "rerank_rate": 0.44801980198019803,
+      "ndcg@10": 0.7884372044673748
+    }
+  },
+  "check_excluding_declined": {
+    "queries": 396,
+    "tau": 0.1801413529043867,
+    "rerank_rate": 0.49747474747474746,
+    "calls_saved": 0.5025252525252526,
+    "s0": 0.6674194101942722,
+    "s1": 0.7898897119158733,
+    "s2": 0.7632458962523165,
+    "s2_minus_s1": {
+      "mean": -0.02664381566355682,
+      "low": -0.04017375859295794,
+      "high": -0.01502514631224052,
+      "n": 396,
+      "resamples": 10000,
+      "seed": 20261024,
+      "level": 0.95
+    },
+    "s2_minus_s0": {
+      "mean": 0.09582648605804439,
+      "low": 0.07422551926604722,
+      "high": 0.11855776681824726,
+      "n": 396,
+      "resamples": 10000,
+      "seed": 20261024,
+      "level": 0.95
+    },
+    "share_of_s1_gain_kept": 0.7824467214580448,
+    "cost_per_query_usd": 0.0006593330808080808,
+    "s1_cost_per_query_usd": 0.001314231313131313,
+    "latency_per_query_s": 2.2501252258121216,
+    "s1_latency_per_query_s": 4.245104679505039,
+    "oracle_gate": {
+      "rerank_rate": 0.44696969696969696,
+      "ndcg@10": 0.7922716307537917
+    }
+  },
+  "check_declined_queries": 8,
+  "context_fixed_rates": [
+    {
+      "tune_target_rate": 0.5,
+      "tau": 0.17696091694653102,
+      "rerank_rate": 0.49504950495049505,
+      "s2": 0.7599862369857308,
+      "s2_minus_s1": {
+        "mean": -0.026116215353387377,
+        "low": -0.03893761369035307,
+        "high": -0.014576256181487881,
+        "n": 404,
+        "resamples": 10000,
+        "seed": 20261024,
+        "level": 0.95
+      }
+    },
+    {
+      "tune_target_rate": 0.6,
+      "tau": 0.2567730489555559,
+      "rerank_rate": 0.6287128712871287,
+      "s2": 0.7739142933485059,
+      "s2_minus_s1": {
+        "mean": -0.012188158990612269,
+        "low": -0.022252979528793168,
+        "high": -0.004174945071646855,
+        "n": 404,
+        "resamples": 10000,
+        "seed": 20261024,
+        "level": 0.95
+      }
+    },
+    {
+      "tune_target_rate": 0.8,
+      "tau": 0.4571132811616285,
+      "rerank_rate": 0.849009900990099,
+      "s2": 0.7855078916351782,
+      "s2_minus_s1": {
+        "mean": -0.0005945607039400011,
+        "low": -0.0015914199330090532,
+        "high": 0.0,
+        "n": 404,
+        "resamples": 10000,
+        "seed": 20261024,
+        "level": 0.95
+      }
+    }
+  ],
+  "this_study_calls": {
+    "status_counts": {
+      "valid": 300,
+      "model_error": 5
+    },
+    "declines": 5,
+    "decline_rate": 0.01639344262295082,
+    "other_error_rate": 0.0,
+    "estimated_usd": 0.3923686,
+    "mean_input_tokens": 10745.703333333333,
+    "mean_output_tokens": 466.65
+  },
+  "cost_note": "check-half per-query rerank costs; declined calls at the check mean $0.00131",
+  "outcome_rules": {
+    "run": "valid",
+    "H_S2": "not shown",
+    "no_saving_possible": false,
+    "decline_warning": false,
+    "blindness": "NOT BLIND: the check-half S2 curve was computed and seen before this study's contract"
+  }
+}

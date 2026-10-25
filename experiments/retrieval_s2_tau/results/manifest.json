@@ -1,0 +1,79 @@
+{
+  "study": "S2 threshold study: S1-plain on the tune queries outside the S1 pilot sample",
+  "mode": "paid",
+  "started": "2026-10-24T13:21:54+00:00",
+  "model": "claude-haiku-5-5",
+  "model_settings": {
+    "model": "claude-haiku-5-5",
+    "max_tokens": 4096,
+    "effort": "medium",
+    "thinking_display": "summarized",
+    "disable_parallel_tool_use": true,
+    "timeout_s": 60.0,
+    "max_retries": 2
+  },
+  "prices_as_of": "2026-10-19",
+  "rerank": {
+    "rerank_config": {
+      "k": 20,
+      "max_doc_chars": 2000,
+      "shuffle": false
+    },
+    "rerank_shuffle_seed": null,
+    "rerank_system": "You rank scientific abstracts by how relevant they are to a claim. An abstract is relevant if it contains evidence that supports or refutes the claim.",
+    "rerank_instruction": "Rank all {k} abstracts from most to least relevant to the claim. Reply with exactly one line: RANKING: followed by all abstract numbers, most relevant first, separated by commas."
+  },
+  "prompt_sha256": {
+    "rerank_system": "6e84b9934d49d16471b1cef7403cb5c69acbf3d957bf1a082ac87c132b456aea",
+    "rerank_instruction": "cb24e4bbc621d9e2f3f27c30193a5574fac0f19046603588c7eb320e85de4336"
+  },
+  "s1_pilot": {
+    "commit": "08f31b482af0d2cfb10c30f96fc8eabd7fe3d1b7",
+    "sha256": {
+      "manifest.json": "a8013b6d368c50ad98a96b2ba22d792431e1dc3ec19e78658329e23e7ec45cec",
+      "private/sample.json": "771a2020c58ef37aa59b258ca351eb7c7a0f382b71676c8be86f8e9a12b48021",
+      "private/calls.jsonl": "4a143981f208ea8fefc5fa31ad53d6fa370f16c468518b7c63bdca1714acc50e"
+    }
+  },
+  "bm25_config": {
+    "k1": 1.5,
+    "b": 0.75,
+    "method": "lucene",
+    "lower": true,
+    "stopwords": "english",
+    "splitter": "(?u)\\b\\w\\w+\\b",
+    "stemmer": null
+  },
+  "bm25s": "0.3.13",
+  "numpy": "2.5.3",
+  "versions": {
+    "anthropic": "1.17.0",
+    "bm25s": "0.3.13",
+    "numpy": "2.5.3"
+  },
+  "python": "3.14.0",
+  "dataset_sha256": "536e14446a0ba56ed1398ab1055f39fe852686ecad24a6306c80c490fa8e0165",
+  "split": "train (tune half minus the S1 pilot sample)",
+  "dev_partition_seed": "oarp-r2-dev-partition-v1",
+  "order_seed": "oarp-r2-s2-tau-v1:",
+  "queries": 305,
+  "queries_sha256": "34b4c5c1f0e1953573c627e166203b426f44e090822782646e836d89d0ff4e94",
+  "scheduled_calls": 305,
+  "budget_usd": 0.7,
+  "worst_case_call_usd": 0.004,
+  "git": {
+    "commit": "f216160042e7d5d298fd273af05278914183646d",
+    "dirty": false,
+    "untracked_files": 0
+  },
+  "script_sha256": {
+    "run_tune.py": "6680b2bbf40146e42176edae9897acde907815cc956364d80fd5475656d07765",
+    "analyze.py": "20d0771241809fb34a976c202a512f4f3a0a7a4ce5fd7fd4ea389ab4e28a810c"
+  },
+  "completed_calls": 305,
+  "estimated_spend_usd": 0.412369,
+  "stopped_by_budget": false,
+  "stop_reason": null,
+  "calls_above_worst_case": 0,
+  "finished": "2026-10-24T13:43:52+00:00"
+}

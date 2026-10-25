@@ -15,7 +15,7 @@ queries, and a model-based rerank gate has been piloted.
 | Status | |
 |---|---|
 | **Implemented and tested** | provider-neutral agent loop, Anthropic adapter, coding environment, Docker sandbox, independent verifier, JSONL tracing, `oarp` CLI, optional LangGraph version of the loop, task format with hidden tests and wrong candidate fixes, frozen task-set manifests; retrieval data loader, BM25 search, retrieval metrics, listwise reranking and relevance-gate pipelines with an offline strategy combiner (481 tests) |
-| **Measured with a real model** | a tool-calling pilot and three small coding feasibility studies on Claude Haiku 5.5 (33 runs in total, all at a success ceiling); reranking and gating studies on retrieval development queries (1,324 calls) ([results](#results-so-far)) |
+| **Measured with a real model** | a tool-calling pilot and three small coding feasibility studies on Claude Haiku 5.5 (33 runs in total, all at a success ceiling); reranking and gating studies on retrieval development queries (1,629 calls) ([results](#results-so-far)) |
 | **Measured without a model** | a BM25 retrieval baseline on 809 development queries, and the upper bounds of reranking and gating ([results](#results-so-far)) |
 | **Not yet done** | a retrieval agent, controlled harness comparisons, held-out evaluation, automatic harness optimization |
 
@@ -232,6 +232,15 @@ rerank rate, which was cheaper and kept more of the gain. A perfect gate
 would beat always reranking at 38% of the calls. A pilot on 100 development
 queries.
 
+**Score-gap threshold** ([experiments/retrieval_s2_tau](experiments/retrieval_s2_tau/README.md)).
+A threshold chosen on 405 development queries to rerank as few queries as
+possible within 0.01 nDCG@10 of always reranking. It reranked half of them.
+On 404 other development queries it halved cost and latency, but lost 0.026
+nDCG@10 (95% CI 0.015 to 0.039) against always reranking, more than the
+pre-stated 0.02 margin. Not shown. This confirmation was not blind: the
+rule's curve on those queries had been seen before the threshold rule was
+fixed.
+
 ## Security model
 
 Model inference and the API key stay in the trusted host process. Only
@@ -268,7 +277,7 @@ temperature), so results are reported over repeated runs.
 
 The coding environment stays as a working, tested demonstration; no new coding tasks are planned for now.
 
-1. **Cheaper reranking:** the free score-gap gate, chosen on development queries and confirmed on queries it was not chosen on, against always reranking.
+1. **A final evaluation on held-out queries** of always reranking (and any gate worth confirming), run once.
 2. **A model-controlled strategy:** an agent that decides whether to search again, reformulate or reorder.
 3. **Harness optimization:** a bounded, automatic search over retrieval and harness settings, validated on the held-out queries only at the end.
 4. Later: test whether the same approach transfers back to the coding environment.
