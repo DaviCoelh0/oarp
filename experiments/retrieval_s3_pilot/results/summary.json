@@ -1,0 +1,258 @@
+{
+  "study": "S3 pilot: search agent (S3 + forced rerank) on a stratified tune sample",
+  "mode": "paid",
+  "git_at_run": {
+    "commit": "8d57c64df7d21b94c60d58ff9b5a7123c05bd077",
+    "dirty": false,
+    "untracked_files": 0
+  },
+  "episodes": {
+    "scheduled_main": 163,
+    "scored": 163,
+    "per_stratum": {
+      "beyond": 63,
+      "within": 100
+    }
+  },
+  "smoke_passed": true,
+  "stopped": false,
+  "stop_reason": null,
+  "harness_error": null,
+  "estimated_spend_usd": 0.71621,
+  "reused_sha256": {
+    "pilot": {
+      "manifest.json": "a8013b6d368c50ad98a96b2ba22d792431e1dc3ec19e78658329e23e7ec45cec",
+      "private/sample.json": "771a2020c58ef37aa59b258ca351eb7c7a0f382b71676c8be86f8e9a12b48021",
+      "private/calls.jsonl": "4a143981f208ea8fefc5fa31ad53d6fa370f16c468518b7c63bdca1714acc50e"
+    },
+    "tau": {
+      "manifest.json": "864868fca71bdf06f880f4e30b4c600f5742b11e869f5b609165178cdebbe8d9",
+      "private/sample.json": "4cb7624657a8f0d07c29e6cb68577544ed84645e30f81fdade10080bd1e40ef0",
+      "private/calls.jsonl": "7395477e2c05603c39b14f170445977015589d9d3b0d48060e5f4859dd37a0c0"
+    }
+  },
+  "weights_tune": {
+    "beyond": 63,
+    "within": 342
+  },
+  "bootstrap_seed": 20261025,
+  "margin_h3": -0.02,
+  "means": {
+    "beyond": {
+      "s0": 0.0,
+      "s1": 0.0,
+      "s3fr": 0.23555182859731846,
+      "s3ao": 0.21953094934595951
+    },
+    "within": {
+      "s0": 0.7946473955297246,
+      "s1": 0.8949919801283499,
+      "s3fr": 0.9144128249737183,
+      "s3ao": 0.9118858664767866
+    }
+  },
+  "H1_overall_s3fr_minus_s1": {
+    "mean": 0.05304122009567182,
+    "low": 0.03511276082731241,
+    "high": 0.07262644417628195,
+    "n": {
+      "beyond": 63,
+      "within": 100
+    },
+    "weights": {
+      "beyond": 0.15555555555555556,
+      "within": 0.8444444444444444
+    },
+    "resamples": 10000,
+    "seed": 20261025,
+    "level": 0.95
+  },
+  "H2_beyond_s3fr_minus_s1": {
+    "mean": 0.2355518285973185,
+    "low": 0.15630200493579452,
+    "high": 0.32164985216559216,
+    "n": 63,
+    "resamples": 10000,
+    "seed": 20261025,
+    "level": 0.95
+  },
+  "H3_within_s3fr_minus_s1": {
+    "mean": 0.019420844845368476,
+    "low": 0.0047727204155680256,
+    "high": 0.03781325233780865,
+    "n": 100,
+    "resamples": 10000,
+    "seed": 20261025,
+    "level": 0.95
+  },
+  "H4_s3ao_minus_s3fr": {
+    "overall": {
+      "mean": -0.004626012836509363,
+      "low": -0.02025597483300242,
+      "high": 0.010815680924762632,
+      "n": {
+        "beyond": 63,
+        "within": 100
+      },
+      "weights": {
+        "beyond": 0.15555555555555556,
+        "within": 0.8444444444444444
+      },
+      "resamples": 10000,
+      "seed": 20261025,
+      "level": 0.95
+    },
+    "beyond": {
+      "mean": -0.016020879251358946,
+      "low": -0.040204627385382996,
+      "high": 0.0066842192622355535,
+      "n": 63,
+      "resamples": 10000,
+      "seed": 20261025,
+      "level": 0.95
+    },
+    "within": {
+      "mean": -0.0025269584969318084,
+      "low": -0.020639504017695758,
+      "high": 0.015658040178174643,
+      "n": 100,
+      "resamples": 10000,
+      "seed": 20261025,
+      "level": 0.95
+    }
+  },
+  "H4_reading": {
+    "overall": "inconclusive",
+    "beyond": "inconclusive",
+    "within": "inconclusive"
+  },
+  "mechanism": {
+    "rescue_rate_beyond": 0.38095238095238093,
+    "rescued": 24,
+    "landing_rate_forced_rerank": 1.0,
+    "landing_rate_agent": 0.9166666666666666,
+    "harm_rate_within_forced_rerank": 0.0,
+    "harm_rate_within_agent": 0.0,
+    "rm3_context_beyond": {
+      "first_relevant_within_10": 0.031746031746031744,
+      "first_relevant_within_20": 0.15873015873015872,
+      "note": "descriptive: RM3 is one fixed ranking; the agent adds up to 2 x 10 results"
+    }
+  },
+  "behaviour": {
+    "beyond": {
+      "episodes": 63,
+      "mean_searches": 1.0158730158730158,
+      "searches": {
+        "0": 7,
+        "1": 48,
+        "2": 8
+      },
+      "share_no_search": 0.1111111111111111,
+      "mean_new_documents": 5.603174603174603,
+      "mean_model_calls": 2.015873015873016
+    },
+    "within": {
+      "episodes": 100,
+      "mean_searches": 0.87,
+      "searches": {
+        "0": 23,
+        "1": 67,
+        "2": 10
+      },
+      "share_no_search": 0.23,
+      "mean_new_documents": 3.53,
+      "mean_model_calls": 1.87
+    },
+    "stop_reasons": {
+      "finished": 162,
+      "model_error": 1
+    },
+    "agent_ranking_status": {
+      "valid": 101,
+      "repaired": 59,
+      "failed": 2,
+      "model_error": 1
+    },
+    "rerank_status": {
+      "valid": 161,
+      "model_error": 2
+    },
+    "rejected_tool_calls": {}
+  },
+  "cost_latency": {
+    "per_stratum_usd": {
+      "beyond": 0.004322568253968254,
+      "within": 0.004029533
+    },
+    "s3_per_query_usd_weighted": 0.004075116261728395,
+    "s1_per_query_usd_weighted": 0.0012918148691358027,
+    "extra_usd_per_rescued_query": 0.046968210999999996,
+    "rerank_share_of_cost": 0.37494689201482484,
+    "unpriced_calls": 3,
+    "s3_wall_s_per_query_weighted": 10.332869593985746,
+    "s1_latency_s_per_query_weighted": 4.3188879255203325,
+    "per_stratum_wall_s": {
+      "beyond": 11.512416586649442,
+      "within": 10.11558462165296
+    },
+    "note": "estimated from usage with pricing.py; unpriced calls (errors) count as $0 here"
+  },
+  "sensitivity": {
+    "h1_excluding_declined": {
+      "mean": 0.05337591039232669,
+      "low": 0.03521780542821909,
+      "high": 0.07391300668010513,
+      "n": {
+        "beyond": 63,
+        "within": 98
+      },
+      "weights": {
+        "beyond": 0.15555555555555556,
+        "within": 0.8444444444444444
+      },
+      "resamples": 10000,
+      "seed": 20261025,
+      "level": 0.95
+    },
+    "within_unweighted": {
+      "mean": 0.019420844845368476,
+      "low": 0.0047727204155680256,
+      "high": 0.03781325233780865,
+      "n": 100,
+      "resamples": 10000,
+      "seed": 20261025,
+      "level": 0.95
+    },
+    "h1_with_check_weights": {
+      "mean": 0.04884461738585672,
+      "low": 0.0318169196872453,
+      "high": 0.0675294949917345,
+      "n": {
+        "beyond": 63,
+        "within": 100
+      },
+      "weights": {
+        "beyond": 0.13613861386138615,
+        "within": 0.8638613861386139
+      },
+      "resamples": 10000,
+      "seed": 20261025,
+      "level": 0.95
+    }
+  },
+  "errors": {
+    "declined_episodes": 2,
+    "decline_rate": 0.012269938650306749,
+    "other_error_episodes": 0,
+    "other_error_rate": 0.0
+  },
+  "outcome_rules": {
+    "run": "valid",
+    "decline_warning": false,
+    "H1": "positive",
+    "H2_holds": true,
+    "H3_holds": true,
+    "earns_confirmation": true
+  }
+}
