@@ -1,0 +1,238 @@
+{
+  "study": "S3 confirmation: search agent (S3 + forced rerank) on the check half, settings frozen at the pilot",
+  "mode": "paid",
+  "git_at_run": {
+    "commit": "a6ed70be580ccb0f943655df0841402b83565ce3",
+    "dirty": false,
+    "untracked_files": 0
+  },
+  "episodes": {
+    "scheduled_main": 404,
+    "scored": 404,
+    "per_stratum": {
+      "beyond": 55,
+      "within": 349
+    }
+  },
+  "smoke_passed": true,
+  "stopped": false,
+  "stop_reason": null,
+  "harness_error": null,
+  "estimated_spend_usd": 1.757388,
+  "s1_check_sha256": {
+    "manifest.json": "d0905eb86fbf3d973aa3bab69df0a3531327aa97f763ce01c9400539637c0220",
+    "private/sample.json": "e13ab3132ea07c933c62fdfc0ea718aa7fb26bcb369d8673b260f43501fe6238",
+    "private/calls.jsonl": "f0ff07cba7194c208848fbd6036772f13f41ded5da342fcfb068378cf064cb19"
+  },
+  "bootstrap_seed": 20261026,
+  "margin_c2": -0.02,
+  "means": {
+    "all": {
+      "s0": 0.6660573051070536,
+      "s1": 0.7861024523391181,
+      "s3fr": 0.819000201366328,
+      "s3ao": 0.8244173771923399
+    },
+    "beyond": {
+      "s0": 0.0,
+      "s1": 0.0,
+      "s3fr": 0.31169984657581806,
+      "s3ao": 0.2958091197947266
+    },
+    "within": {
+      "s0": 0.7710233560551566,
+      "s1": 0.9099867929656268,
+      "s3fr": 0.898947248682884,
+      "s3ao": 0.907722403429786
+    }
+  },
+  "C1_s3fr_minus_s1": {
+    "mean": 0.03289774902720983,
+    "low": 0.014079774664113651,
+    "high": 0.05286500924008014,
+    "n": 404,
+    "resamples": 10000,
+    "seed": 20261026,
+    "level": 0.95
+  },
+  "C2_within_s3fr_minus_s1": {
+    "mean": -0.01103954428274276,
+    "low": -0.02107013593706584,
+    "high": -0.0019149469321254914,
+    "n": 349,
+    "resamples": 10000,
+    "seed": 20261026,
+    "level": 0.95
+  },
+  "C3_beyond_s3fr_minus_s1": {
+    "mean": 0.3116998465758181,
+    "low": 0.2114059428391727,
+    "high": 0.4219624047764475,
+    "n": 55,
+    "resamples": 10000,
+    "seed": 20261026,
+    "level": 0.95
+  },
+  "C4_s3ao_minus_s3fr": {
+    "overall": {
+      "mean": 0.00541717582601185,
+      "low": -0.00434347824993059,
+      "high": 0.01587710810463911,
+      "n": 404,
+      "resamples": 10000,
+      "seed": 20261026,
+      "level": 0.95
+    },
+    "beyond": {
+      "mean": -0.015890726781091474,
+      "low": -0.053168327925014094,
+      "high": 0.017155265770798424,
+      "n": 55,
+      "resamples": 10000,
+      "seed": 20261026,
+      "level": 0.95
+    },
+    "within": {
+      "mean": 0.008775154746902058,
+      "low": -0.0008600542254541698,
+      "high": 0.01965706399416556,
+      "n": 349,
+      "resamples": 10000,
+      "seed": 20261026,
+      "level": 0.95
+    }
+  },
+  "C4_reading": {
+    "overall": "inconclusive",
+    "beyond": "inconclusive",
+    "within": "inconclusive"
+  },
+  "s3fr_minus_s0": {
+    "mean": 0.15294289625927435,
+    "low": 0.12521194667191357,
+    "high": 0.1814359767522175,
+    "n": 404,
+    "resamples": 10000,
+    "seed": 20261026,
+    "level": 0.95
+  },
+  "gain_share_by_stratum": {
+    "beyond": 1.2898871901096025,
+    "within": -0.2898871901096026
+  },
+  "mechanism": {
+    "rescue_rate_beyond": 0.43636363636363634,
+    "rescued": 24,
+    "landing_rate_forced_rerank": 1.0,
+    "landing_rate_agent": 0.9166666666666666,
+    "harm_rate_within": 0.011461318051575931
+  },
+  "behaviour": {
+    "beyond": {
+      "episodes": 55,
+      "mean_searches": 1.018181818181818,
+      "searches": {
+        "0": 4,
+        "1": 46,
+        "2": 5
+      },
+      "share_no_search": 0.07272727272727272,
+      "mean_new_documents": 5.9818181818181815,
+      "mean_model_calls": 2.018181818181818
+    },
+    "within": {
+      "episodes": 349,
+      "mean_searches": 0.8997134670487106,
+      "searches": {
+        "0": 59,
+        "1": 266,
+        "2": 24
+      },
+      "share_no_search": 0.16905444126074498,
+      "mean_new_documents": 3.63323782234957,
+      "mean_model_calls": 1.8997134670487106
+    },
+    "stop_reasons": {
+      "finished": 398,
+      "model_error": 5,
+      "no_tool_call": 1
+    },
+    "agent_ranking_status": {
+      "valid": 244,
+      "repaired": 151,
+      "model_error": 5,
+      "failed": 4
+    },
+    "rerank_status": {
+      "valid": 394,
+      "model_error": 9,
+      "repaired": 1
+    },
+    "rejected_tool_calls": {}
+  },
+  "cost_latency": {
+    "s3_per_query_usd": 0.0041051665841584165,
+    "s1_per_query_usd": 0.0012882069306930693,
+    "per_stratum_usd": {
+      "beyond": 0.004303569090909091,
+      "within": 0.004073899713467049
+    },
+    "extra_usd_per_rescued_query": 0.04741882083333334,
+    "rerank_share_of_cost": 0.37338495145546186,
+    "unpriced_calls": 14,
+    "s3_wall_s_per_query": 11.210041764604924,
+    "s1_latency_s_per_query": 4.18939625031354,
+    "note": "estimated from usage with pricing.py; unpriced calls (errors) count as $0 here"
+  },
+  "tune_to_check": {
+    "pilot_tune_reweighted_to_check": {
+      "mean": 0.04884461738585672,
+      "low": 0.0318169196872453,
+      "high": 0.0675294949917345,
+      "n": {
+        "beyond": 63,
+        "within": 100
+      },
+      "weights": {
+        "beyond": 0.13613861386138615,
+        "within": 0.8638613861386139
+      },
+      "resamples": 10000,
+      "seed": 20261025,
+      "level": 0.95
+    },
+    "check": {
+      "mean": 0.03289774902720983,
+      "low": 0.014079774664113651,
+      "high": 0.05286500924008014,
+      "n": 404,
+      "resamples": 10000,
+      "seed": 20261026,
+      "level": 0.95
+    },
+    "pilot_summary_sha256": "75eeaa8eb16760a1de3abd1f62975a51fcc42e103bf5ff7fa962636d526040db",
+    "note": "descriptive: the pilot is a stratified tune sample reweighted to check proportions"
+  },
+  "sensitivity": {
+    "c1_excluding_declined": {
+      "mean": 0.03364731799238676,
+      "low": 0.01469339299545453,
+      "high": 0.05446485945898291,
+      "n": 395,
+      "resamples": 10000,
+      "seed": 20261026,
+      "level": 0.95
+    }
+  },
+  "errors": {
+    "declined_episodes": 9,
+    "decline_rate": 0.022277227722772276,
+    "other_error_episodes": 0,
+    "other_error_rate": 0.0
+  },
+  "outcome_rules": {
+    "run": "valid",
+    "outcome": "confirmed with harm",
+    "decline_warning": false
+  }
+}
