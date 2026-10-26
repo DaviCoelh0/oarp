@@ -1,0 +1,101 @@
+{
+  "study": "R1 pilot: reformulate once, then rerank, paired with the S3 pilot's tune episodes",
+  "mode": "paid",
+  "started": "2026-10-26T17:06:02+00:00",
+  "model": "claude-haiku-5-5",
+  "model_settings": {
+    "model": "claude-haiku-5-5",
+    "max_tokens": 4096,
+    "effort": "medium",
+    "thinking_display": "summarized",
+    "disable_parallel_tool_use": true,
+    "timeout_s": 60.0,
+    "max_retries": 2
+  },
+  "prices_as_of": "2026-10-19",
+  "agent_config": {
+    "first_k": 20,
+    "first_chars": 2000,
+    "search_k": 10,
+    "search_chars": 800,
+    "max_searches": 3,
+    "max_model_calls": 8,
+    "final_order": "forced_rerank",
+    "rerank_doc_chars": 2000,
+    "rerank_shuffle": false,
+    "extra_search": "once"
+  },
+  "agent_config_sha256": "1d1a99b56ff19aa8a5b972b74f603976729c44034d1121ba4cfc1583b3896648",
+  "r1_prompt_sha256": {
+    "agent_system": "32a63607a221591460a98d61b83c5fa704104d363e34e53e7530584c72bb83dd",
+    "reformulate_instruction": "30af968579708aec4fb0dd80ca13720eedb8fb2551531ec1ea45044f224b0272"
+  },
+  "rerank_prompt_sha256": {
+    "rerank_system": "6e84b9934d49d16471b1cef7403cb5c69acbf3d957bf1a082ac87c132b456aea",
+    "rerank_instruction": "cb24e4bbc621d9e2f3f27c30193a5574fac0f19046603588c7eb320e85de4336"
+  },
+  "r1_prompts": {
+    "system": "You find and rank scientific abstracts that are relevant to a claim. An abstract is relevant if it contains evidence that supports or refutes the claim.",
+    "instruction": "Relevant abstracts may be missing from these results. Write one search query, different from the claim, that could find them; it will be run with BM25 keyword matching. Reply with exactly one line: QUERY: followed by your query."
+  },
+  "bm25_config": {
+    "k1": 1.5,
+    "b": 0.75,
+    "method": "lucene",
+    "lower": true,
+    "stopwords": "english",
+    "splitter": "(?u)\\b\\w\\w+\\b",
+    "stemmer": null
+  },
+  "bm25s": "0.3.13",
+  "numpy": "2.5.3",
+  "versions": {
+    "anthropic": "1.17.0",
+    "langgraph": "1.2.16",
+    "bm25s": "0.3.13",
+    "numpy": "2.5.3"
+  },
+  "python": "3.14.0",
+  "dataset_sha256": "536e14446a0ba56ed1398ab1055f39fe852686ecad24a6306c80c490fa8e0165",
+  "reused_sha256": {
+    "pilot_runner": "47e4a8cfaf0eb627429618ee2de09e66d3a415f2662ac288bda8eab22526af06",
+    "pilot_sample": "d19b6102eb0b46911a13e6f94f62de94f3dc1d25f552f482b2c4cef6a4429280",
+    "check_sample": "ffcf529b5733a770ace96e7015fc3b444a41d1906bb68756f2c9ca9479c2e0fa"
+  },
+  "split": "train (tune half: the S3 pilot's sample; smoke on spare tune queries)",
+  "dev_partition_seed": "oarp-r2-dev-partition-v1",
+  "order_seed": "oarp-r2-s3-r1-pilot-v1:",
+  "strata_sample": {
+    "main": 163,
+    "beyond": 63
+  },
+  "smoke_n": 5,
+  "scheduled_episodes": {
+    "smoke": 5,
+    "main": 163
+  },
+  "sample_sha256": "bf9750cab42f6d78dea2298075ac4dc96dae94af403a3499d880998455a8fb2b",
+  "budget_usd": 0.8,
+  "worst_case_call_usd": 0.0055,
+  "episode_worst_usd": 0.011,
+  "git": {
+    "commit": "2b8c12b1b9e6f93d86cb8139a94e955dfc854c11",
+    "dirty": false,
+    "untracked_files": 0
+  },
+  "script_sha256": {
+    "run_pilot.py": "8dc9d901dee6d3150f7f2b16c99ae633e40332daace4a1dbc8d682d71f79ae65",
+    "analyze.py": "aef86406bdee67c88ea0e673390574c76753f96c3219d3e14a4fcc982f74252c"
+  },
+  "completed_episodes": {
+    "smoke": 5,
+    "main": 163
+  },
+  "estimated_spend_usd": 0.471593,
+  "smoke_passed": true,
+  "stopped": false,
+  "stop_reason": null,
+  "harness_error": null,
+  "calls_above_worst_case": 0,
+  "finished": "2026-10-26T17:28:47+00:00"
+}

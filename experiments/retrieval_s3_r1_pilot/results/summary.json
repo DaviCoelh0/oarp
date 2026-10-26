@@ -1,0 +1,218 @@
+{
+  "study": "R1 pilot: reformulate once, then rerank, paired with the S3 pilot's tune episodes",
+  "mode": "paid",
+  "git_at_run": {
+    "commit": "2b8c12b1b9e6f93d86cb8139a94e955dfc854c11",
+    "dirty": false,
+    "untracked_files": 0
+  },
+  "episodes": {
+    "scheduled_main": 163,
+    "scored": 163,
+    "per_stratum": {
+      "beyond": 63,
+      "within": 100
+    }
+  },
+  "smoke_passed": true,
+  "stopped": false,
+  "stop_reason": null,
+  "harness_error": null,
+  "estimated_spend_usd": 0.471593,
+  "reused_sha256": {
+    "pilot": {
+      "manifest.json": "a8013b6d368c50ad98a96b2ba22d792431e1dc3ec19e78658329e23e7ec45cec",
+      "private/sample.json": "771a2020c58ef37aa59b258ca351eb7c7a0f382b71676c8be86f8e9a12b48021",
+      "private/calls.jsonl": "4a143981f208ea8fefc5fa31ad53d6fa370f16c468518b7c63bdca1714acc50e"
+    },
+    "tau": {
+      "manifest.json": "864868fca71bdf06f880f4e30b4c600f5742b11e869f5b609165178cdebbe8d9",
+      "private/sample.json": "4cb7624657a8f0d07c29e6cb68577544ed84645e30f81fdade10080bd1e40ef0",
+      "private/calls.jsonl": "7395477e2c05603c39b14f170445977015589d9d3b0d48060e5f4859dd37a0c0"
+    },
+    "s3_episodes": "4f41bc759b8aad91752b696de57e4f8e52d92a1786692c01d289997ac8c94fbf",
+    "s3_pilot_analyzer": "b6a92b6bfd1ab49f1e40ca965579bc73e1a5a59a61e166edcc64320bf54d4334"
+  },
+  "weights_tune": {
+    "beyond": 63,
+    "within": 342
+  },
+  "bootstrap_seed": 20261027,
+  "band": 0.02,
+  "means": {
+    "beyond": {
+      "s0": 0.0,
+      "s1": 0.0,
+      "s3": 0.23555182859731846,
+      "r1": 0.2892391257045806
+    },
+    "within": {
+      "s0": 0.7946473955297246,
+      "s1": 0.8949919801283499,
+      "s3": 0.9144128249737183,
+      "r1": 0.8869752256702165
+    }
+  },
+  "primary_r1_minus_s3": {
+    "mean": -0.01481817097293862,
+    "low": -0.038197412919723284,
+    "high": 0.006989050304676138,
+    "n": {
+      "beyond": 63,
+      "within": 100
+    },
+    "weights": {
+      "beyond": 0.15555555555555556,
+      "within": 0.8444444444444444
+    },
+    "resamples": 10000,
+    "seed": 20261027,
+    "level": 0.95
+  },
+  "primary_reading": {
+    "reading": "inconclusive",
+    "s3_decision_adds_value": false,
+    "r1_better": false,
+    "equivalent_within_band": false
+  },
+  "r1_minus_s3_by_stratum": {
+    "beyond": {
+      "mean": 0.05368729710726215,
+      "low": -0.01777071658523985,
+      "high": 0.13259993459040928,
+      "n": 63,
+      "resamples": 10000,
+      "seed": 20261027,
+      "level": 0.95
+    },
+    "within": {
+      "mean": -0.02743759930350192,
+      "low": -0.05140717622082347,
+      "high": -0.005295416438423614,
+      "n": 100,
+      "resamples": 10000,
+      "seed": 20261027,
+      "level": 0.95
+    }
+  },
+  "r1_minus_s1": {
+    "overall": {
+      "mean": 0.03822304912273319,
+      "low": 0.01798710736585919,
+      "high": 0.058962199948148525,
+      "n": {
+        "beyond": 63,
+        "within": 100
+      },
+      "weights": {
+        "beyond": 0.15555555555555556,
+        "within": 0.8444444444444444
+      },
+      "resamples": 10000,
+      "seed": 20261027,
+      "level": 0.95
+    },
+    "beyond": {
+      "mean": 0.2892391257045806,
+      "low": 0.1995746697408592,
+      "high": 0.38434814132944634,
+      "n": 63,
+      "resamples": 10000,
+      "seed": 20261027,
+      "level": 0.95
+    },
+    "within": {
+      "mean": -0.00801675445813345,
+      "low": -0.024754224012091115,
+      "high": 0.009082165493113132,
+      "n": 100,
+      "resamples": 10000,
+      "seed": 20261027,
+      "level": 0.95
+    }
+  },
+  "mechanism": {
+    "rescue_rate_beyond": {
+      "r1": 0.4126984126984127,
+      "s3": 0.38095238095238093
+    },
+    "harm_rate_within": {
+      "r1": 0.01,
+      "s3": 0.0
+    },
+    "mean_new_documents": {
+      "beyond": {
+        "r1": 6.349206349206349,
+        "s3": 5.603174603174603
+      },
+      "within": {
+        "r1": 4.38,
+        "s3": 3.53
+      }
+    },
+    "s3_searched_share": {
+      "beyond": 0.8888888888888888,
+      "within": 0.77
+    },
+    "overlap_jaccard_first_search": {
+      "mean": 0.21114685706031858,
+      "episodes": 156,
+      "note": "R1's new documents vs those of S3's first model search"
+    }
+  },
+  "behaviour": {
+    "reformulation_status": {
+      "model_error": 2,
+      "valid": 161
+    },
+    "rerank_status": {
+      "model_error": 2,
+      "valid": 161
+    },
+    "rejected_tool_calls": {}
+  },
+  "cost_latency": {
+    "usd_per_query_weighted": {
+      "r1": 0.002671607308641975,
+      "s3": 0.004075116261728395,
+      "s1": 0.0012918148691358027
+    },
+    "s_per_query_weighted": {
+      "r1": 7.514401911480732,
+      "s3": 10.332869593985746,
+      "s1": 4.3188879255203325
+    },
+    "unpriced_calls": 4,
+    "note": "estimated from usage with pricing.py; unpriced calls (errors) count as $0 here"
+  },
+  "sensitivity": {
+    "primary_excluding_declined": {
+      "mean": -0.015291018489280151,
+      "low": -0.037612370044269136,
+      "high": 0.007080981857297811,
+      "n": {
+        "beyond": 63,
+        "within": 98
+      },
+      "weights": {
+        "beyond": 0.15555555555555556,
+        "within": 0.8444444444444444
+      },
+      "resamples": 10000,
+      "seed": 20261027,
+      "level": 0.95
+    }
+  },
+  "errors": {
+    "declined_episodes": 2,
+    "decline_rate": 0.012269938650306749,
+    "other_error_episodes": 0,
+    "other_error_rate": 0.0
+  },
+  "outcome_rules": {
+    "run": "valid",
+    "decline_warning": false,
+    "primary": "inconclusive",
+    "r1_within_no_harm_beyond_margin": false
+  }
+}
