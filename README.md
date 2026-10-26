@@ -1,23 +1,31 @@
 # oarp: Observable Agentic RAG Platform
 
-oarp is a Python platform for **building, evaluating and (eventually)
-optimizing tool-using LLM agents**. Every run is bounded, traced and scored by
+oarp is a Python platform for **building, evaluating and optimizing
+tool-using LLM agents** (optimizing so far means a bounded search over harness
+settings with the model frozen). Every run is bounded, traced and scored by
 an independent verifier, so "the agent did X" is a claim you can check.
 
 The first task environment is **sandboxed Python bug-fixing**: the agent reads
 files, writes fixes and runs tests inside a restricted Docker container, and a
 separate verifier decides whether the bug is fixed. A second environment,
-**retrieval** over a scientific-abstract benchmark, has a model-free BM25
-baseline, standard retrieval metrics, and the pieces for comparing reranking
-strategies; model reranking has been piloted and confirmed on development
-queries, and a model-based rerank gate has been piloted.
+**retrieval** over a scientific-claim benchmark (BEIR SciFact), asks when
+extra retrieval work is worth its cost: BM25 search, a model reranker, and a
+search agent built as a LangGraph state graph whose harness enforces the
+search budget. Every comparison there was pre-registered, run on development
+queries, and the final ones were evaluated once on the untouched test split.
+
+**Headline (held-out test split, 300 queries, nDCG@10):** BM25 0.662 → model
+reranking 0.757 → search agent 0.791. A policy chosen by an automated search
+over 1,089 routing configurations reached 0.786 at about half the agent's
+cost; its pre-registered non-inferiority to the agent was not established
+([details](#held-out-evaluation)).
 
 | Status | |
 |---|---|
-| **Implemented and tested** | provider-neutral agent loop, Anthropic adapter, coding environment, Docker sandbox, independent verifier, JSONL tracing, `oarp` CLI, optional LangGraph version of the loop, task format with hidden tests and wrong candidate fixes, frozen task-set manifests; retrieval data loader, BM25 search, retrieval metrics, listwise reranking and relevance-gate pipelines with an offline strategy combiner (481 tests) |
-| **Measured with a real model** | a tool-calling pilot and three small coding feasibility studies on Claude Haiku 5.5 (33 runs in total, all at a success ceiling); reranking and gating studies on retrieval development queries (1,629 calls) ([results](#results-so-far)) |
-| **Measured without a model** | a BM25 retrieval baseline on 809 development queries, and the upper bounds of reranking and gating ([results](#results-so-far)) |
-| **Not yet done** | a retrieval agent, controlled harness comparisons, held-out evaluation, automatic harness optimization |
+| **Implemented and tested** | provider-neutral agent loop, Anthropic adapter, coding environment, Docker sandbox, independent verifier, JSONL tracing, `oarp` CLI, optional LangGraph version of the loop, task format with hidden tests and wrong candidate fixes, frozen task-set manifests; retrieval data loader, BM25 search, retrieval metrics, listwise reranker and relevance gate, RM3 query expansion, a LangGraph search agent with one config dataclass and one graph builder, shared study machinery (preflight, budget guards, pinned inputs, stratified bootstrap) (609 tests) |
+| **Measured with a real model** | a tool-calling pilot and three small coding feasibility studies on Claude Haiku 5.5 (33 runs, all at a success ceiling); retrieval studies of reranking, gating, a search agent and a fixed reformulation on development queries, and a one-shot evaluation on the held-out test split ([results](#results-so-far)) |
+| **Measured without a model** | a BM25 baseline, upper bounds of reranking and gating, reachability and RM3, an offline search-gate study, and an automated search over 1,089 routing policies ([results](#results-so-far)) |
+| **Not yet done** | agent-proposed harness changes, a second retrieval benchmark, transfer of the retrieval findings back to the coding environment |
 
 ## How a run works
 
@@ -53,7 +61,7 @@ task folder ──► workspace (temp copy) ──► agent loop ◄──► mo
    check that scripted episodes give identical messages, stop reasons, error
    kinds and trace events. `--loop graph` selects it; the choice is recorded
    in the run config and its hash. The plain loop is the dependency-free
-   reference and default, and the baseline for all results so far. The graph
+   reference and default, and the baseline for all coding results. The graph
    loop is a faithful port, and the place for future structural variants
    (e.g. an added node), which would be compared against that baseline.
 
@@ -85,7 +93,7 @@ in a manifest; `oarp tasks check` fails if any task changed since.
 | `src/oarp/core/` | Shared and environment-independent: types, `ModelClient` protocol + scripted model, tool registry, loop (plain and optional LangGraph), tracing, pricing |
 | `src/oarp/providers/` | `AnthropicModel`: the only module that knows Anthropic's API format |
 | `src/oarp/envs/coding/` | Coding environment: task loader, workspace and allowlist, sandbox, tools, verifier, runner, task validity checks, task-set manifests |
-| `src/oarp/envs/retrieval/` | Retrieval environment: checksum-verified benchmark download and loader, deterministic BM25 search, retrieval metrics, model reranker and relevance gate (`rerank.py`, `gate.py`), label-free strategy pieces (`strategies.py`), label-reading analysis helpers kept apart (`analysis.py`) |
+| `src/oarp/envs/retrieval/` | Retrieval environment: checksum-verified benchmark download and loader, deterministic BM25 search (also weighted queries), retrieval metrics, model reranker and relevance gate (`rerank.py`, `gate.py`), RM3 expansion (`rm3.py`), the search agent as a LangGraph `StateGraph` (`agent.py`: `AgentConfig`, `build_agent_graph`), label-free strategy pieces (`strategies.py`), study machinery (`study.py`), statistics (`stats.py`), label-reading analysis helpers kept apart (`analysis.py`) |
 | `src/oarp/cli.py` | `oarp run` / `oarp rescore` / `oarp tasks freeze\|check` |
 | `tasks/coding/dev/` | 7 development tasks, each with a reference solution the agent never sees (2 in format 2, with hidden tests and wrong candidate fixes) |
 | `docker/` | Sandbox image: base image pinned by digest, packages pinned by version and hash |
@@ -98,20 +106,22 @@ into a gitignored `data/` folder and is never committed.
 ## Quick start
 
 Requirements: Python 3.11+, Docker (for running tests and verification), and
-an Anthropic API key only for paid runs. Every command below was run on
-2026-10-22 (macOS, Python 3.14, Docker 29.6).
+an Anthropic API key only for paid runs. The commands below were run on
+2026-10-22 (macOS, Python 3.14, Docker 29.6); the test counts were re-run on
+2026-10-27 with all extras installed.
 
 ```bash
 python3 -m venv venv
 venv/bin/python -m pip install -e '.[dev]'
-venv/bin/python -m pip install -e '.[langgraph]'  # optional: the graph loop (--loop graph)
+venv/bin/python -m pip install -e '.[langgraph]'  # optional: the graph loop and the retrieval agent
+venv/bin/python -m pip install -e '.[retrieval]'  # optional: the retrieval environment
 docker build -t oarp-sandbox:0.1 -f docker/sandbox.Dockerfile docker
 ```
 
 ```bash
-venv/bin/python -m pytest -q                      # 215 passed, 1 skipped (opt-in live test)
-                                                  # without the langgraph extra: 181 passed, 4 skipped
-venv/bin/python -m pytest -q -m "not docker"      # without Docker: 183 passed, 1 skipped
+venv/bin/python -m pytest -q                      # 609 passed, 1 skipped (opt-in live test)
+venv/bin/python -m pytest -q -m "not docker"      # without Docker: 529 passed, 1 skipped, 80 deselected
+# tests that need a missing optional extra (langgraph, retrieval) are skipped, not failed
 ```
 
 Free, scripted dry run through the full pipeline (no API calls; the scripted
@@ -133,14 +143,20 @@ venv/bin/oarp tasks freeze --split dev --output manifest.json   # hash every dev
 venv/bin/oarp tasks check manifest.json           # fails if any task changed since
 ```
 
-Retrieval baseline (free, no model calls; downloads about 2.8 MB once):
+Retrieval, free (no model calls; downloads about 2.8 MB once):
 
 ```bash
-venv/bin/pip install -e ".[retrieval]"
 venv/bin/python -m oarp.envs.retrieval.data                     # download and verify the data
 venv/bin/python experiments/retrieval_baseline/run_baseline.py  # BM25 on the development queries
 venv/bin/python experiments/retrieval_rerank_headroom/run_analysis.py  # reranking and gating upper bounds
+venv/bin/python experiments/retrieval_s3_reachability/run_analysis.py  # reachability and RM3
+venv/bin/python experiments/retrieval_s3_pilot/run_pilot.py --dry-run  # the search agent, scripted model
 ```
+
+The paid retrieval studies each have a runner with a `--dry-run` mode and a
+README with the exact command, settings and budget. Their per-query records
+stay in gitignored `private/` folders, so the offline analyses that reuse them
+(the gate study, the configuration search) need those local records.
 
 `oarp run` exits with 0 (verified success), 1 (verified failure) or 3
 (invalid run). `oarp rescore` exits with 0 when status and file hashes match
@@ -148,8 +164,51 @@ the recorded run, and 1 when they don't.
 
 ## Results so far
 
-All results are small and preliminary. Each study's README has the full setup
-and limitations.
+Each study's README has the full setup, settings, budget and limitations.
+Every retrieval comparison followed a written contract (hypothesis, margin,
+budget, outcome rules) fixed before its run; development queries were split
+into a tune half (for choices) and a check half (for confirmation), and the
+test split was opened once, for the final evaluation below. Most results are
+small; negative and inconclusive ones are reported like the others.
+
+### Held-out evaluation
+
+[experiments/retrieval_heldout](experiments/retrieval_heldout/README.md):
+the one-shot evaluation on SciFact's 300 test queries, which no choice had
+used. Everything was frozen before the test split was loaded. Claude Haiku
+5.5, one S1 call and one agent episode per query, $1.76 in total.
+
+| | BM25 (S0) | Reranking (S1) | Search agent (S3) | Searched policy (P\*) |
+|---|---|---|---|---|
+| **nDCG@10** | 0.662 | 0.757 | **0.791** | 0.786 |
+| $ per query (estimated) | 0 | 0.0013 | 0.0042 | 0.0020 |
+| s per query | 0 | 4.5 | 11.0 | 5.9 |
+
+| Pre-registered comparison | Difference [95% CI] | Outcome |
+|---|---|---|
+| S1 − S0 | +0.095 [+0.067, +0.125] | holds |
+| S3 − S1 | +0.034 [+0.016, +0.055] | holds |
+| P\* − S1 (primary) | +0.030 [+0.014, +0.048] | holds |
+| P\* − S3 ≥ −0.01, at lower cost | −0.004 [−0.015, +0.004], at 49% of S3's cost | not shown |
+
+- **S1:** a model reranks BM25's top 20 in one call.
+- **S3:** a search agent that may search the corpus again (at most twice)
+  before its candidates are reranked.
+- **P\*:** the policy an automated configuration search selected on
+  development data. It routes each query by BM25's own scores to S3, S1 or
+  plain BM25.
+- **Each step of retrieval work paid off on untouched queries.** The routed
+  policy beats reranking at half the agent's cost.
+- **Not shown:** that it matches the agent within the pre-set 0.01 margin.
+  The combined optimisation claim (both of the last two rows) is therefore
+  **not established**.
+- **Where the agent's gain comes from:** almost entirely the 48 test queries
+  where BM25 had no relevant document in its top 20 (0.000 → 0.211). On the
+  others it neither helped nor harmed (+0.001).
+- **Limits:** one run of a stochastic model, one dataset, one model; SciFact
+  may be in the model's training data.
+
+### Development studies (in order)
 
 **Tool-calling pilot** ([experiments/pilot_b](experiments/pilot_b/README.md)).
 50 Claude Haiku 5.5 calls on arithmetic tasks with deliberately failing tools,
@@ -241,6 +300,49 @@ pre-stated 0.02 margin. Not shown. This confirmation was not blind: the
 rule's curve on those queries had been seen before the threshold rule was
 fixed.
 
+**Search reachability and RM3** ([experiments/retrieval_s3_reachability](experiments/retrieval_s3_reachability/README.md)).
+Free, on 405 development queries. 63 (16%) have no relevant document in
+BM25's top 20, which reranking cannot fix. RM3 query expansion (untuned)
+lowered nDCG@10 by 0.044 [0.024, 0.065] and brought a relevant document into
+the top 20 for only 10 of the 63, so a fixed classic reformulation was a weak
+baseline.
+
+**Search agent, pilot** ([experiments/retrieval_s3_pilot](experiments/retrieval_s3_pilot/README.md)).
+The agent is a LangGraph `StateGraph`. The harness forces BM25's top 20 first
+and enforces the search budget, and a forced rerank orders all candidates;
+the model decides only whether and what to search. On a stratified sample of
+163 development queries (all 63 hard ones, 100 others), it beat reranking by
++0.053 nDCG@10 [+0.035, +0.073], reweighted to the population. Its searches
+rescued 24 of the 63 hard queries, at about 3.2× reranking's cost.
+
+**Search agent, confirmation** ([experiments/retrieval_s3_check](experiments/retrieval_s3_check/README.md)).
+The same agent, unchanged, on all 404 check queries (blind for the agent):
++0.033 nDCG@10 over reranking [+0.014, +0.053]. On queries BM25 already
+handled it was slightly worse (−0.011 [−0.021, −0.002]), just past the
+pre-set −0.02 harm margin. Pre-registered outcome: "confirmed with harm".
+This harm did not reappear on the test split.
+
+**Fixed reformulation** ([experiments/retrieval_s3_r1_pilot](experiments/retrieval_s3_r1_pilot/README.md)).
+A harness rule replacing the agent's decision: always make exactly one
+model-written search, then rerank. Paired with the agent's episodes on the
+same 163 queries: −0.015 [−0.038, +0.007], inconclusive. It rescued as many
+hard queries but did worse on the others, at 35% lower cost.
+
+**Search gate** ([experiments/retrieval_s3_gate](experiments/retrieval_s3_gate/README.md)).
+Free and offline, scored from recorded episodes: run the extra search only
+when BM25 looks unsure. The gate selected on tune searched almost always. On
+the check half (not blind) it did not remove the agent's small harm; its use
+is cost, not quality.
+
+**Configuration search** ([experiments/retrieval_config_search](experiments/retrieval_config_search/README.md)).
+Free and offline: 1,089 policies that route each query, using only BM25's
+scores, to the agent, the reranker or plain BM25. They cover 3 signals and
+11 rates for each of the two decisions, with label-free thresholds. All were
+scored from recorded outcomes on the 404 check queries. The pre-registered
+rule picked the cheapest policy within 0.005 of the best: 0.816 nDCG@10 at
+$0.0020 per query, against the agent's 0.819 at $0.0041. Those are selection
+numbers; the policy, frozen, is P\* in the held-out evaluation above.
+
 ## Security model
 
 Model inference and the API key stay in the trusted host process. Only
@@ -261,7 +363,7 @@ their absence. The CPU and `/tmp` size limits are set but not tested.
 kernel, so this protects against accidental damage and score-gaming by buggy
 code, not against a determined attacker. It also cannot stop a "fix" that
 special-cases the visible test inputs. Format-2 tasks catch this with hidden
-tests (no such task exists yet), and passing diffs are reviewed by hand.
+tests (two development tasks so far), and passing diffs are reviewed by hand.
 
 **Reproducibility.** Every trace records the git commit (and whether tracked
 files were modified), hashes of the prompts, tools and configuration, the
@@ -277,10 +379,19 @@ temperature), so results are reported over repeated runs.
 
 The coding environment stays as a working, tested demonstration; no new coding tasks are planned for now.
 
-1. **A final evaluation on held-out queries** of always reranking (and any gate worth confirming), run once.
-2. **A model-controlled strategy:** an agent that decides whether to search again, reformulate or reorder.
-3. **Harness optimization:** a bounded, automatic search over retrieval and harness settings, validated on the held-out queries only at the end.
-4. Later: test whether the same approach transfers back to the coding environment.
+SciFact's test split has now been used for its one evaluation, so new claims
+need new held-out data.
 
-oarp does not yet demonstrate automatic self-improvement or general coding
-ability. Those are research directions, not results.
+1. **A second benchmark** (e.g. a multi-hop retrieval dataset), with the same
+   contracts and a fresh held-out split, to see whether the findings transfer.
+2. **Reducing the agent's cost:** cap the reranker's candidates, or use a
+   pre-registered, cost-aware routing rule (the gate and configuration studies
+   suggest most of the agent's quality at about half its cost).
+3. **A larger configuration search** that includes the agent's own settings
+   (search budget, results per search), run live rather than offline.
+4. Later: agent-proposed harness changes, tested in isolation and reversible,
+   and a transfer back to the coding environment.
+
+oarp's configuration search is a bounded search over approved harness
+settings with the model frozen. It does not demonstrate self-improvement or
+general coding ability. Those are research directions, not results.
