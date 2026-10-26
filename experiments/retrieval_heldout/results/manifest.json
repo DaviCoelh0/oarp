@@ -1,0 +1,99 @@
+{
+  "study": "Held-out evaluation: S1 and S3 on every SciFact test query (P* and S0 scored offline)",
+  "mode": "paid",
+  "query_split": "test",
+  "started": "2026-10-26T18:11:46+00:00",
+  "model": "claude-haiku-5-5",
+  "model_settings": {
+    "model": "claude-haiku-5-5",
+    "max_tokens": 4096,
+    "effort": "medium",
+    "thinking_display": "summarized",
+    "disable_parallel_tool_use": true,
+    "timeout_s": 60.0,
+    "max_retries": 2
+  },
+  "prices_as_of": "2026-10-19",
+  "s1_config": {
+    "k": 20,
+    "max_doc_chars": 2000,
+    "shuffle": false
+  },
+  "s3_config": {
+    "first_k": 20,
+    "first_chars": 2000,
+    "search_k": 10,
+    "search_chars": 800,
+    "max_searches": 3,
+    "max_model_calls": 8,
+    "final_order": "forced_rerank",
+    "rerank_doc_chars": 2000,
+    "rerank_shuffle": false,
+    "extra_search": "agent"
+  },
+  "s3_config_sha256": "8d7a08fdcd7d69c25bb610e5ba92d7483320002c204ab131b25d72bb11b19418",
+  "agent_prompt_sha256": {
+    "agent_system": "32a63607a221591460a98d61b83c5fa704104d363e34e53e7530584c72bb83dd",
+    "agent_instruction": "05c6e0636087326ffd5d17ea148cb36ec23323d0bafc738632ae7389b52869d8",
+    "search_tool_description": "fec9cd71670a8db4ebd02d5a2481c051558b7cca5bcd2f1b0ad19356d88b8f49"
+  },
+  "rerank_prompt_sha256": {
+    "rerank_system": "6e84b9934d49d16471b1cef7403cb5c69acbf3d957bf1a082ac87c132b456aea",
+    "rerank_instruction": "cb24e4bbc621d9e2f3f27c30193a5574fac0f19046603588c7eb320e85de4336"
+  },
+  "bm25_config": {
+    "k1": 1.5,
+    "b": 0.75,
+    "method": "lucene",
+    "lower": true,
+    "stopwords": "english",
+    "splitter": "(?u)\\b\\w\\w+\\b",
+    "stemmer": null
+  },
+  "bm25s": "0.3.13",
+  "numpy": "2.5.3",
+  "versions": {
+    "anthropic": "1.17.0",
+    "langgraph": "1.2.16",
+    "bm25s": "0.3.13",
+    "numpy": "2.5.3"
+  },
+  "python": "3.14.0",
+  "dataset_sha256": "536e14446a0ba56ed1398ab1055f39fe852686ecad24a6306c80c490fa8e0165",
+  "reused_sha256": {
+    "pilot_runner": "47e4a8cfaf0eb627429618ee2de09e66d3a415f2662ac288bda8eab22526af06",
+    "s3_pilot": "d19b6102eb0b46911a13e6f94f62de94f3dc1d25f552f482b2c4cef6a4429280",
+    "s3_check": "ffcf529b5733a770ace96e7015fc3b444a41d1906bb68756f2c9ca9479c2e0fa",
+    "r1_pilot": "65cee92d7408544db368d62b414d428cd9666b0a76439a6c141371522b4cad5b"
+  },
+  "dev_partition_seed": "oarp-r2-dev-partition-v1",
+  "order_seed": "oarp-r2-heldout-v1:",
+  "scheduled": {
+    "smoke": 5,
+    "main": 300
+  },
+  "sample_sha256": "128a76994beb1238a4f74cade6a131ddc9a1a27725ef2d7a4780484846866902",
+  "budget_usd": 2.3,
+  "worst_case_call_usd": 0.0055,
+  "query_worst_usd": 0.05499999999999999,
+  "git": {
+    "commit": "106f9e746cc313bcb06e5dc5b4082b77c7ab9a13",
+    "dirty": false,
+    "untracked_files": 0
+  },
+  "script_sha256": {
+    "run_test.py": "d231ed4e0782711960150ac21587b09ece07c47093789e93a361c6a574ef2bc2",
+    "analyze.py": "88b431c6bb91e2ef2886ff5095e0427b35f85cdea55cdc3eecaea985a092f48e"
+  },
+  "completed": {
+    "smoke": 5,
+    "main": 300
+  },
+  "estimated_spend_usd": 1.755248,
+  "smoke_passed": true,
+  "stopped": false,
+  "stop_reason": null,
+  "harness_error": null,
+  "calls_above_worst_case": 0,
+  "finished": "2026-10-26T19:30:43+00:00"
+}
