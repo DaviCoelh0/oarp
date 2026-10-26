@@ -7,6 +7,7 @@ id reaches the model. Skipped without the `retrieval` and `langgraph` extras."""
 
 import ast
 import json
+import re
 from dataclasses import asdict
 from pathlib import Path
 
@@ -291,3 +292,95 @@ def test_call_costs_price_each_call_and_mark_unknown_ones() -> None:
     assert costs["rerank"] == [estimate_cost(MODEL, Usage(5000, 40))]
     failed = run_episode(build_agent_graph(AgentConfig(), RaisingModel([]), INDEX, CORPUS), "q1", CLAIM)
     assert agent_mod.call_costs(failed) == {"agent": [None], "rerank": []}
+
+
+# --- the handle-record fix ---------------------------------------------------------
+
+def test_recorded_handles_of_a_model_search_are_handles() -> None:
+    record, _ = episode([respond(call("search", 1, query="kinase marker5 marker7")), finish("RANKING: D1")])
+    search = record.searches[1]
+    assert search["handles"] and all(re.fullmatch(r"D\d+", h) for h in search["handles"])
+    assert set(search["new_handles"]) <= set(search["handles"])
+    by_handle = {f"D{i}": d for i, d in enumerate(record.candidates, 1)}
+    hits = [d for d, s in INDEX.rank("kinase marker5 marker7", 10) if s > 0]
+    assert [by_handle[h] for h in search["handles"]] == hits
+
+
+# --- R1: reformulate once, then rerank ----------------------------------------------
+
+R1 = AgentConfig(final_order="forced_rerank", extra_search="once")
+S3_PILOT_HASH = "8d7a08fdcd7d69c25bb610e5ba92d7483320002c204ab131b25d72bb11b19418"
+
+
+def reranked(n: int) -> ModelResponse:
+    return ModelResponse(text="RANKING: " + ", ".join(str(i) for i in range(n, 0, -1)), usage=Usage(5000, 40),
+                         model=MODEL)
+
+
+def test_r1_config_rules_and_the_stable_hash() -> None:
+    assert config_sha256(AgentConfig(final_order="forced_rerank")) == S3_PILOT_HASH  # recorded runs stay valid
+    assert config_sha256(R1) != S3_PILOT_HASH
+    with pytest.raises(ValueError, match="forced_rerank"):
+        AgentConfig(extra_search="once")
+    with pytest.raises(ValueError):
+        AgentConfig(final_order="forced_rerank", extra_search="twice")  # type: ignore[arg-type]
+    nodes = set(build_agent_graph(R1, ScriptedModel([]), INDEX, CORPUS).graph.get_graph().nodes)
+    assert {"forced_search", "reformulate", "search", "rerank", "assemble"} <= nodes
+    assert not nodes & {"model", "tools"}
+
+
+def test_r1_sees_s3s_first_message_except_the_instruction() -> None:
+    _, s3 = episode([finish("RANKING: D1"), reranked(20)], AgentConfig(final_order="forced_rerank"))
+    _, r1 = episode([respond(text="QUERY: kinase marker5"), reranked(30)], R1)
+    s3_system, s3_user = s3.calls[0][0]
+    r1_system, r1_user = r1.calls[0][0]
+    assert r1_system == s3_system and r1.calls[0][1] == []  # no tools offered
+    shared = agent_mod.abstracts_message(CLAIM, [CORPUS[d] for d in BM25[:20]], AgentConfig())
+    assert s3_user.content == f"{shared}\n\n" + agent_mod.AGENT_INSTRUCTION.format(extra=2, search_k=10)
+    assert r1_user.content == f"{shared}\n\n{agent_mod.REFORMULATE_INSTRUCTION}"
+
+
+def test_r1_runs_exactly_one_search_and_reranks_every_candidate() -> None:
+    query = "kinase marker5 marker7"
+    record, model = episode([respond(text=f"thinking aloud\nQUERY: {query}"), reranked(30)], R1)
+    hits = [d for d, s in INDEX.rank(query, 10) if s > 0]
+    new = [d for d in hits if d not in BM25[:20]]
+    assert record.reformulation_status == "valid" and record.model_calls == 1
+    assert [s["query"] for s in record.searches] == [CLAIM, query] and record.searches[1]["source"] == "model"
+    assert record.searches[1]["new_handles"][0] == "D21" and record.candidates == BM25[:20] + new
+    rerank_request = model.calls[1][0]
+    assert rerank_request == rerank_messages(CLAIM, [CORPUS[d] for d in record.candidates],
+                                             RerankConfig(k=len(record.candidates)))
+    assert record.ranking[: len(record.candidates)] == list(reversed(record.candidates))
+    assert record.agent_ranking_status == "not_applicable" and record.tool_calls["requested"] == 0
+    assert len(agent_mod.call_costs(record)["agent"]) == 1 and len(agent_mod.call_costs(record)["rerank"]) == 1
+    json.dumps(asdict(record))
+
+
+@pytest.mark.parametrize("text", ["I would search for kinases.", "QUERY:   ", ""])
+def test_r1_without_a_valid_query_searches_nothing_and_reduces_to_s1(text) -> None:
+    answer = reranked(20)
+    record, model = episode([respond(text=text), answer], R1)
+    assert record.reformulation_status == "failed" and len(record.searches) == 1
+    assert model.calls[1][0] == rerank_messages(CLAIM, [CORPUS[d] for d in BM25[:20]], RerankConfig())
+    s1 = rerank(ScriptedModel([answer]), "q1", CLAIM, BM25, CORPUS, RerankConfig())
+    assert record.ranking == s1.ranking
+
+
+def test_r1_model_error_falls_back_to_s1_and_the_rerank_still_runs() -> None:
+    model = RaisingModel([ModelResponse(text="RANKING: 2, 1", usage=Usage(10, 1), model=MODEL)])
+    record = run_episode(build_agent_graph(R1, model, INDEX, CORPUS), "q1", CLAIM)
+    assert record.stop_reason == "model_error" and record.reformulation_status == "model_error"
+    assert record.candidates == BM25[:20] and record.rerank["status"] == "repaired"
+    assert agent_mod.call_costs(record)["agent"] == [None]
+
+
+def test_r1_sends_no_dataset_id_to_the_model() -> None:
+    _, model = episode([respond(text="QUERY: kinase epsilon"), reranked(30)], R1)
+    sent = json.dumps([[m.content for m in messages] for messages, _ in model.calls])
+    assert len(model.calls) == 2 and not any(doc_id in sent for doc_id in CORPUS)
+
+
+def test_parse_query_takes_the_last_query_line() -> None:
+    assert agent_mod.parse_query("QUERY: a\nnotes\nquery:  b c ") == "b c"
+    assert agent_mod.parse_query("no line") is None and agent_mod.parse_query(None) is None

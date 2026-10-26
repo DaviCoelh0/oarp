@@ -30,6 +30,19 @@ retrieval), never dataset ids. The graph:
   reranker's; candidates left out are appended in first-retrieval order), then
   BM25's ranking of the claim below the candidates, as S1 does below rank 20.
 
+R1 (extra_search="once", with final_order="forced_rerank"): the model's
+decision is removed and replaced by a harness rule, always exactly one
+model-written search:
+
+    START -> forced_search -> reformulate -> search -> rerank -> assemble -> END
+
+- `reformulate` (model: the query text only): one call without tools; the
+  system prompt and the claim plus abstracts are S3's first message byte for
+  byte, only the closing instruction differs; the answer is `QUERY: ...`;
+- `search` (harness): runs that query exactly once (as a model search above);
+  with no valid query, or if the call raised, nothing is searched and the
+  rerank request equals S1's.
+
 The agent's prompt does not depend on `final_order`, so the agent behaves the
 same in both configurations and its ranking is recorded in both (paired
 scoring). `build_agent_graph` is the only place where an `AgentConfig` becomes
@@ -70,7 +83,13 @@ SEARCH_TOOL_DESCRIPTION = (
     "Search the corpus of scientific abstracts with BM25 keyword matching. Returns at most {search_k} "
     "abstracts, shortened, each with a handle such as D21. Abstracts shown before keep their handle."
 )
+REFORMULATE_INSTRUCTION = (
+    "Relevant abstracts may be missing from these results. Write one search query, different from the claim, "
+    "that could find them; it will be run with BM25 keyword matching. Reply with exactly one line: QUERY: "
+    "followed by your query."
+)
 _RANKING_LINE = re.compile(r"^\s*RANKING:\s*(.*)$", re.I | re.M)
+_QUERY_LINE = re.compile(r"^\s*QUERY:\s*(.*)$", re.I | re.M)
 _HANDLE = re.compile(r"\bD(\d+)\b", re.I)
 
 
@@ -87,17 +106,29 @@ class AgentConfig:
     final_order: Literal["agent", "forced_rerank"] = "agent"
     rerank_doc_chars: int = 2000  # S1's confirmed setting; the reranker sees all candidates
     rerank_shuffle: bool = False
+    extra_search: Literal["agent", "once"] = "agent"  # "once": R1, one model-written search, no decision
 
     def __post_init__(self) -> None:
         if self.final_order not in ("agent", "forced_rerank"):
             raise ValueError("final_order must be 'agent' or 'forced_rerank'")
+        if self.extra_search not in ("agent", "once"):
+            raise ValueError("extra_search must be 'agent' or 'once'")
+        if self.extra_search == "once" and self.final_order != "forced_rerank":
+            raise ValueError("extra_search='once' has no agent ranking: it needs final_order='forced_rerank'")
         if min(self.first_k, self.first_chars, self.search_k, self.search_chars, self.max_searches,
                self.max_model_calls, self.rerank_doc_chars) < 1:
             raise ValueError("all numeric settings must be >= 1")
 
 
+# Fields added after a recorded run, with their defaults. They enter the hash
+# only when set away from the default, so hashes recorded before they existed
+# stay valid (the S3 pilot and check runners pin 8d7a08fd... for S3).
+ADDED_FIELDS: dict[str, Any] = {"extra_search": "agent"}
+
+
 def config_sha256(config: AgentConfig) -> str:
-    return hashlib.sha256(json.dumps(asdict(config), sort_keys=True).encode()).hexdigest()
+    fields = {k: v for k, v in asdict(config).items() if not (k in ADDED_FIELDS and v == ADDED_FIELDS[k])}
+    return hashlib.sha256(json.dumps(fields, sort_keys=True).encode()).hexdigest()
 
 
 def search_tool(config: AgentConfig) -> ToolSpec:
@@ -110,10 +141,25 @@ def search_tool(config: AgentConfig) -> ToolSpec:
     )
 
 
-def first_message(claim: str, texts: Sequence[str], config: AgentConfig) -> str:
+def abstracts_message(claim: str, texts: Sequence[str], config: AgentConfig) -> str:
+    """The claim and the forced search's abstracts: the part shared by S3 and R1."""
     shown = "\n\n".join(f"[D{i}] {truncate(t, config.first_chars)}" for i, t in enumerate(texts, 1))
+    return f"Claim: {claim}\n\nA search for the claim returned these {len(texts)} abstracts:\n\n{shown}"
+
+
+def first_message(claim: str, texts: Sequence[str], config: AgentConfig) -> str:
     instruction = AGENT_INSTRUCTION.format(extra=config.max_searches - 1, search_k=config.search_k)
-    return f"Claim: {claim}\n\nA search for the claim returned these {len(texts)} abstracts:\n\n{shown}\n\n{instruction}"
+    return f"{abstracts_message(claim, texts, config)}\n\n{instruction}"
+
+
+def reformulate_message(claim: str, texts: Sequence[str], config: AgentConfig) -> str:
+    return f"{abstracts_message(claim, texts, config)}\n\n{REFORMULATE_INSTRUCTION}"
+
+
+def parse_query(text: str | None) -> str | None:
+    """The last QUERY line's text, or None when there is none or it is empty."""
+    lines = _QUERY_LINE.findall(text or "")
+    return (lines[-1].strip() or None) if lines else None
 
 
 @dataclass(frozen=True)
@@ -172,6 +218,8 @@ class AgentState(TypedDict):
     agent_ranking: ParsedHandles | None
     rerank_record: RerankRecord | None
     ranking: list[str] | None  # the final full ranking that is scored
+    reformulation: str | None  # R1 only: the parsed query
+    reformulation_status: str | None  # R1 only: valid | failed | model_error
 
 
 @dataclass(frozen=True)
@@ -201,6 +249,7 @@ class EpisodeRecord:
     ranking: list[str]  # final full ranking
     calls: list[dict]  # per agent call: tokens, latency, text, tool calls, ...
     totals: dict[str, Any] = field(default_factory=dict)  # agent + rerank tokens and estimated $
+    reformulation_status: str | None = None  # R1 only: valid | failed | model_error
 
 
 def build_agent_graph(config: AgentConfig, model: ModelClient, index: BM25Index,
@@ -210,6 +259,7 @@ def build_agent_graph(config: AgentConfig, model: ModelClient, index: BM25Index,
     dependencies, not settings."""
     specs = [search_tool(config), FINISH_TOOL]
     emit = emitter(None)
+    opening = reformulate_message if config.extra_search == "once" else first_message
 
     def forced_search(state: AgentState) -> dict[str, Any]:
         ranking = [d for d, _ in index.rank(state["claim"])]
@@ -219,7 +269,7 @@ def build_agent_graph(config: AgentConfig, model: ModelClient, index: BM25Index,
             "bm25_ranking": ranking, "handles": handles,
             "searches": [SearchRecord(state["claim"], "harness", list(handles), list(handles))],
             "messages": [Message("system", AGENT_SYSTEM),
-                         Message("user", first_message(state["claim"], [corpus[d] for d in top], config))],
+                         Message("user", opening(state["claim"], [corpus[d] for d in top], config))],
         }
 
     def model_node(state: AgentState) -> dict[str, Any]:
@@ -245,7 +295,8 @@ def build_agent_graph(config: AgentConfig, model: ModelClient, index: BM25Index,
                 lines.append(f"[{by_doc[doc_id]}] already shown above")
             else:
                 handle = f"D{len(handles) + 1}"
-                handles[handle] = by_doc[doc_id] = doc_id
+                handles[handle] = doc_id
+                by_doc[doc_id] = handle
                 new.append(handle)
                 lines.append(f"[{handle}] {truncate(corpus[doc_id], config.search_chars)}")
             returned.append(by_doc[doc_id])
@@ -306,13 +357,43 @@ def build_agent_graph(config: AgentConfig, model: ModelClient, index: BM25Index,
         return {"rerank_record": rerank(model, state["query_id"], state["claim"], candidates, corpus, settings)}
 
     def assemble(state: AgentState) -> dict[str, Any]:
-        if state["stop_reason"] == StopReason.MODEL_ERROR:
+        if config.extra_search == "once":
+            parsed = ParsedHandles(list(state["handles"].values()), "not_applicable")
+        elif state["stop_reason"] == StopReason.MODEL_ERROR:
             parsed = replace(parse_handles(None, state["handles"]), status="model_error")
         else:
             parsed = parse_handles(state["final_answer"], state["handles"])
         order = state["rerank_record"].ranking if state["rerank_record"] is not None else parsed.order
         chosen = set(order)
         return {"agent_ranking": parsed, "ranking": order + [d for d in state["bm25_ranking"] if d not in chosen]}
+
+    def reformulate_node(state: AgentState) -> dict[str, Any]:
+        record = call_model(model, state["messages"], [], step=1, emit=emit)
+        if isinstance(record, str):  # the client raised (e.g. a decline): no extra search
+            return {"model_calls": 1, "stop_reason": StopReason.MODEL_ERROR, "error": record,
+                    "reformulation_status": "model_error"}
+        query = parse_query(record.response.text)
+        return {"model_calls": 1, "steps": [record], "messages": [assistant_message(record)],
+                "stop_reason": StopReason.FINISHED, "final_answer": record.response.text or None,
+                "reformulation": query, "reformulation_status": "valid" if query else "failed"}
+
+    def forced_once_search(state: AgentState) -> dict[str, Any]:
+        if state["reformulation"] is None:
+            return {}
+        search, handles, _ = run_search(state["reformulation"], state)  # the text is shown to no model
+        return {"searches": [search], "handles": handles}
+
+    if config.extra_search == "once":
+        graph = StateGraph(AgentState)
+        graph.add_node("forced_search", forced_search)
+        graph.add_node("reformulate", reformulate_node)
+        graph.add_node("search", forced_once_search)
+        graph.add_node("rerank", rerank_node)
+        graph.add_node("assemble", assemble)
+        for a, b in ((START, "forced_search"), ("forced_search", "reformulate"), ("reformulate", "search"),
+                     ("search", "rerank"), ("rerank", "assemble"), ("assemble", END)):
+            graph.add_edge(a, b)
+        return AgentGraph(config, graph.compile(), 7)  # 6 super-steps, +1 as a safety net
 
     finalize = "rerank" if config.final_order == "forced_rerank" else "assemble"
 
@@ -345,6 +426,7 @@ def run_episode(agent: AgentGraph, query_id: str, claim: str) -> EpisodeRecord:
         "query_id": query_id, "claim": claim, "messages": [], "steps": [], "pending": None, "model_calls": 0,
         "searches": [], "handles": {}, "bm25_ranking": [], "stop_reason": None, "final_answer": None,
         "error": None, "agent_ranking": None, "rerank_record": None, "ranking": None,
+        "reformulation": None, "reformulation_status": None,
     }
     final = agent.graph.invoke(initial, {"recursion_limit": agent.recursion_limit})
     return episode_record(agent.config, final)
@@ -385,6 +467,7 @@ def episode_record(config: AgentConfig, state: AgentState) -> EpisodeRecord:
                                "missing": parsed.missing},
         rerank=None if rr is None else asdict(rr),
         ranking=state["ranking"], calls=calls, totals=_totals(usages, agent_failed_calls=_failed(state)),
+        reformulation_status=state["reformulation_status"],
     )
 
 
@@ -417,6 +500,12 @@ def call_costs(record: EpisodeRecord) -> dict[str, list[float | None]]:
     rr = record.rerank
     rerank_cost = [] if rr is None else [cost(rr["model"], None if rr["usage"] is None else Usage(**rr["usage"]))]
     return {"agent": agent, "rerank": rerank_cost}
+
+
+def r1_prompt_sha256() -> dict[str, str]:
+    """R1's prompt parts (kept apart from `prompt_sha256`, which committed S3 runners pin)."""
+    return {name: hashlib.sha256(text.encode()).hexdigest() for name, text in
+            (("agent_system", AGENT_SYSTEM), ("reformulate_instruction", REFORMULATE_INSTRUCTION))}
 
 
 def prompt_sha256() -> dict[str, str]:
